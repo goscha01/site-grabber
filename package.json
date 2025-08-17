@@ -1,0 +1,37 @@
+{
+  "name": "website-screenshot-capture",
+  "version": "1.0.0",
+  "description": "A React app to capture screenshots of websites using Puppeteer backend",
+  "main": "index.js",
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "server": "node start-server.js",
+    "server:dev": "nodemon start-server.js",
+    "server:direct": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "file-saver": "^2.0.5",
+    "nodemon": "^3.0.2",
+    "puppeteer": "^24.9.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "react-scripts": "5.0.1"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}
