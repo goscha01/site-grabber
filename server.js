@@ -19,6 +19,27 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 // Server readiness flag (must be declared before routes)
 let serverReady = false;
 
+// Function to check if server is properly initialized
+const isServerReady = () => {
+  try {
+    // Check if server is listening
+    if (!server || !server.listening) {
+      return false;
+    }
+    
+    // Check if port is bound
+    const addr = server.address();
+    if (!addr || addr.port !== PORT) {
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('❌ Server readiness check failed:', error);
+    return false;
+  }
+};
+
 // Simple in-memory queue system (temporary replacement for Redis/Bull)
 console.log('🔧 Using in-memory queue system');
 
@@ -166,13 +187,26 @@ const analysisResults = new Map();
 
 // Simple ping endpoint (always available)
 app.get('/api/ping', (req, res) => {
-  res.json({
-    status: 'pong',
-    timestamp: new Date().toISOString(),
-    message: 'Server is responding',
-    port: PORT,
-    environment: NODE_ENV
-  });
+  try {
+    console.log(`🏓 Ping request received at ${new Date().toISOString()}`);
+    res.status(200).json({
+      status: 'pong',
+      timestamp: new Date().toISOString(),
+      message: 'Server is responding',
+      port: PORT,
+      environment: NODE_ENV,
+      uptime: process.uptime(),
+      ready: true
+    });
+  } catch (error) {
+    console.error('❌ Error in ping endpoint:', error);
+    res.status(500).json({
+      status: 'error',
+      timestamp: new Date().toISOString(),
+      message: 'Server error in ping endpoint',
+      error: error.message
+    });
+  }
 });
 
 // Health check endpoint
@@ -697,12 +731,17 @@ const server = app.listen(PORT, '0.0.0.0', (err) => {
   console.log(`🌐 Server bound to 0.0.0.0:${PORT}`);
   console.log(`🔧 Railway health: http://localhost:${PORT}/api/railway-health`);
   console.log(`🚀 Startup endpoint: http://localhost:${PORT}/api/startup`);
+  console.log(`🏓 Ping endpoint: http://localhost:${PORT}/api/ping`);
   
-  // Mark server as ready after a short delay
-  setTimeout(() => {
+  // Verify server is properly bound
+  if (isServerReady()) {
     serverReady = true;
     console.log('✅ Server is now ready to accept requests');
-  }, 1000);
+    console.log('✅ Health check endpoints are now responding');
+  } else {
+    console.error('❌ Server failed readiness check');
+    process.exit(1);
+  }
 });
 
 // Handle server errors
@@ -710,8 +749,20 @@ server.on('error', (err) => {
   console.error('❌ Server error:', err);
   if (err.code === 'EADDRINUSE') {
     console.error(`❌ Port ${PORT} is already in use`);
+  } else if (err.code === 'EACCES') {
+    console.error(`❌ Permission denied to bind to port ${PORT}`);
+  } else if (err.code === 'EADDRNOTAVAIL') {
+    console.error(`❌ Address not available for binding`);
   }
+  console.error('❌ Server startup failed, exiting...');
   process.exit(1);
+});
+
+// Handle server listening event
+server.on('listening', () => {
+  const addr = server.address();
+  console.log(`🎯 Server listening on ${addr.address}:${addr.port}`);
+  console.log(`🌐 Server accessible at http://0.0.0.0:${PORT}`);
 });
 
 // Graceful shutdown handling
