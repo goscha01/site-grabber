@@ -2,6 +2,7 @@ const express = require('express');
 const puppeteer = require('puppeteer');
 const cors = require('cors');
 const path = require('path');
+const { analyzeSiteDesign } = require('./src/utils/designAnalysis');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -135,6 +136,18 @@ app.post('/api/screenshot', async (req, res) => {
     
     console.log(`✅ Screenshot captured successfully for: ${url}`);
     
+    // Complete design analysis before closing browser
+    console.log(`🎨 Starting design analysis for: ${url}`);
+    try {
+      const result = await analyzeSiteDesign(url, page);
+      if (result.success) {
+        analysisResults.set(url, result);
+        console.log(`✅ Design analysis completed and stored for: ${url}`);
+      }
+    } catch (err) {
+      console.error('❌ Design analysis failed:', err);
+    }
+    
   } catch (error) {
     console.error('❌ Screenshot capture failed:', error);
     console.error('Error stack:', error.stack);
@@ -156,6 +169,50 @@ app.post('/api/screenshot', async (req, res) => {
         console.error('❌ Error closing browser:', closeError);
       }
     }
+  }
+});
+
+// Store analysis results in memory (in production, use Redis or database)
+const analysisResults = new Map();
+
+// Design analysis endpoint
+app.post('/api/analyze-design', async (req, res) => {
+  const { url } = req.body;
+  
+  if (!url) {
+    return res.status(400).json({ error: 'URL is required' });
+  }
+  
+  console.log(`🎨 Starting design analysis for: ${url}`);
+  
+  try {
+    const analysisResult = await analyzeSiteDesign(url);
+    
+    if (analysisResult.success) {
+      // Store the result
+      analysisResults.set(url, analysisResult);
+      res.json(analysisResult);
+    } else {
+      res.status(500).json({ error: analysisResult.error });
+    }
+  } catch (error) {
+    console.error('❌ Design analysis failed:', error);
+    res.status(500).json({ 
+      error: 'Failed to analyze design',
+      details: error.message 
+    });
+  }
+});
+
+// Get analysis results endpoint
+app.get('/api/analysis-results/:url', (req, res) => {
+  const url = decodeURIComponent(req.params.url);
+  const result = analysisResults.get(url);
+  
+  if (result) {
+    res.json(result);
+  } else {
+    res.status(404).json({ error: 'Analysis results not found' });
   }
 });
 

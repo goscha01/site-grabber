@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import UrlInput from './components/UrlInput';
 import ScreenshotResults from './components/ScreenshotResults';
-import PerformanceMetrics from './components/PerformanceMetrics';
+
+import DesignAnalysisPanel from './components/DesignAnalysisPanel';
 import './styles/app.css';
 
 function App() {
   const [url, setUrl] = useState('');
   const [screenshotResults, setScreenshotResults] = useState({});
   const [isCapturing, setIsCapturing] = useState(false);
-  const [performanceData, setPerformanceData] = useState({});
+  const [analysisData, setAnalysisData] = useState(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
 
   const handleUrlSubmit = async (inputUrl) => {
@@ -18,30 +20,58 @@ function App() {
     setIsCapturing(true);
     
     try {
-      const startTime = performance.now();
       const result = await captureWithPuppeteer(inputUrl);
-      const endTime = performance.now();
-      
       setScreenshotResults({ puppeteer: result });
-      setPerformanceData({
-        puppeteer: {
-          time: endTime - startTime,
-          success: true,
-          error: null
-        }
-      });
+      
+      // Start polling for design analysis results
+      pollForAnalysisResults(inputUrl);
     } catch (error) {
       console.error('Screenshot capture failed:', error);
-      setPerformanceData({
-        puppeteer: {
-          time: 0,
-          success: false,
-          error: error.message
-        }
-      });
     } finally {
       setIsCapturing(false);
     }
+  };
+
+  const pollForAnalysisResults = async (inputUrl) => {
+    setIsAnalyzing(true);
+    let attempts = 0;
+    const maxAttempts = 30; // 30 seconds max
+    
+    const poll = async () => {
+      try {
+        const response = await fetch(`http://localhost:5000/api/analysis-results/${encodeURIComponent(inputUrl)}`);
+        
+        if (response.ok) {
+          const result = await response.json();
+          setAnalysisData(result.analysis);
+          setIsAnalyzing(false);
+          console.log('✅ Design analysis results received');
+          return;
+        }
+        
+        attempts++;
+        if (attempts < maxAttempts) {
+          // Wait 1 second before next attempt
+          setTimeout(poll, 1000);
+        } else {
+          console.log('⏰ Design analysis polling timeout');
+          setIsAnalyzing(false);
+          setAnalysisData(null);
+        }
+      } catch (error) {
+        console.error('Polling error:', error);
+        attempts++;
+        if (attempts < maxAttempts) {
+          setTimeout(poll, 1000);
+        } else {
+          setIsAnalyzing(false);
+          setAnalysisData(null);
+        }
+      }
+    };
+    
+    // Start polling
+    poll();
   };
 
   const captureWithPuppeteer = async (inputUrl) => {
@@ -121,7 +151,11 @@ function App() {
       <main className="app-main">
         <UrlInput onSubmit={handleUrlSubmit} isCapturing={isCapturing} />
         <ScreenshotResults results={screenshotResults} url={url} />
-        <PerformanceMetrics data={performanceData} />
+
+        <DesignAnalysisPanel 
+          analysisData={analysisData}
+          isLoading={isAnalyzing}
+        />
       </main>
     </div>
   );

@@ -25,14 +25,7 @@ const ScreenshotResults = ({ results, url }) => {
     }
   };
 
-  const downloadAllScreenshots = () => {
-    Object.entries(results).forEach(([method, result]) => {
-      if (result.imageData && result.imageData.startsWith('data:image/')) {
-        const filename = url.replace(/[^a-zA-Z0-9]/g, '_');
-        downloadScreenshot(result.imageData, method, filename);
-      }
-    });
-  };
+
 
   const openImageModal = (imageData, method) => {
     setSelectedImage({ imageData, method });
@@ -47,14 +40,7 @@ const ScreenshotResults = ({ results, url }) => {
       <section className="screenshot-results">
         <h2>Screenshots for: {url}</h2>
         
-        <div className="results-actions">
-          <button 
-            onClick={downloadAllScreenshots}
-            className="download-all-btn"
-          >
-            📥 Download All Screenshots
-          </button>
-        </div>
+
         
         <div className="results-grid">
           {Object.entries(results).map(([method, result]) => (
