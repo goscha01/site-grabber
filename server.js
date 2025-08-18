@@ -13,12 +13,37 @@ console.log('  - PWD:', process.env.PWD);
 console.log('  - HOME:', process.env.HOME);
 console.log('🔧 === END DEBUG ===');
 
+// Check available modules
+console.log('🔧 === MODULE AVAILABILITY CHECK ===');
+try {
+  require('express');
+  console.log('✅ express: available');
+} catch (e) {
+  console.log('❌ express: NOT available');
+}
+
+try {
+  require('cors');
+  console.log('✅ cors: available');
+} catch (e) {
+  console.log('❌ cors: NOT available');
+}
+
+try {
+  require('puppeteer');
+  console.log('✅ puppeteer: available');
+} catch (e) {
+  console.log('❌ puppeteer: NOT available');
+}
+
+console.log('🔧 === END MODULE CHECK ===');
+
 const express = require('express');
 const puppeteer = require('puppeteer');
 const cors = require('cors');
 const path = require('path');
-const helmet = require('helmet');
-const morgan = require('morgan');
+// const helmet = require('helmet'); // Removed for Railway compatibility
+// const morgan = require('morgan'); // Removed for Railway compatibility
 
 console.log('✅ All modules loaded successfully');
 
@@ -201,9 +226,7 @@ console.log('🔧 In-memory screenshot queue started');
 
 
 // Middleware
-app.use(helmet());
 app.use(cors());
-app.use(morgan('combined'));
 app.use(express.json({ limit: '50mb' }));
 // Serve static files from the React app build directory
 app.use(express.static(path.join(__dirname, 'build')));
