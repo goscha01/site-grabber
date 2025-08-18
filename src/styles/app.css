@@ -16,37 +16,52 @@ body {
   line-height: 1.6;
 }
 
+/* App Layout */
 .app {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+/* Home Section */
+.home-section {
+  padding-top: 70px; /* Account for fixed navigation */
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .app-header {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  padding: 2rem;
   text-align: center;
-  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+  padding: 60px 20px 40px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  margin-bottom: 40px;
 }
 
 .app-header h1 {
-  font-size: 2.5rem;
-  color: #2c3e50;
-  margin-bottom: 0.5rem;
+  font-size: 3rem;
+  margin-bottom: 20px;
   font-weight: 700;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .app-header p {
-  font-size: 1.1rem;
-  color: #7f8c8d;
+  font-size: 1.3rem;
+  margin-bottom: 40px;
+  opacity: 0.9;
   max-width: 600px;
-  margin: 0 auto;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.6;
 }
 
+/* Main Content */
 .app-main {
-  max-width: 1400px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 0 20px;
+  flex: 1;
 }
 
 /* Template Gallery */
@@ -858,33 +873,34 @@ body {
 /* Mode Selector */
 .mode-selector {
   display: flex;
-  gap: 12px;
-  margin-top: 20px;
+  gap: 20px;
+  justify-content: center;
+  flex-wrap: wrap;
 }
 
 .mode-btn {
-  padding: 12px 24px;
-  border: 2px solid #e2e8f0;
-  background: white;
-  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 15px 30px;
+  border-radius: 30px;
   cursor: pointer;
-  font-size: 1rem;
+  font-size: 1.1rem;
   font-weight: 600;
   transition: all 0.3s ease;
-  color: #64748b;
+  backdrop-filter: blur(10px);
+}
+
+.mode-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
 }
 
 .mode-btn.active {
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: white;
-  border-color: #667eea;
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-}
-
-.mode-btn:hover:not(.active) {
-  background: #f8fafc;
-  border-color: #667eea;
-  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.4);
+  border-color: rgba(255, 255, 255, 0.6);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
 }
 
 /* Async Screenshot Capture */
@@ -1097,8 +1113,26 @@ body {
 
 /* Responsive Design */
 @media (max-width: 768px) {
-  .app-main {
-    padding: 1rem;
+  .app-header h1 {
+    font-size: 2.2rem;
+  }
+  
+  .app-header p {
+    font-size: 1.1rem;
+  }
+  
+  .mode-selector {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .mode-btn {
+    width: 100%;
+    max-width: 300px;
+  }
+  
+  .home-section {
+    padding-top: 60px;
   }
   
   .input-group {
@@ -1118,11 +1152,6 @@ body {
     gap: 1rem;
   }
 
-  .mode-selector {
-    flex-direction: column;
-    align-items: center;
-  }
-  
   .options {
     flex-direction: column;
   }
@@ -1135,6 +1164,24 @@ body {
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-header {
+    padding: 40px 15px 30px;
+  }
+  
+  .app-header h1 {
+    font-size: 1.8rem;
+  }
+  
+  .app-header p {
+    font-size: 1rem;
+  }
+  
+  .app-main {
+    padding: 0 15px;
   }
 }
 

@@ -1,40 +1,38 @@
 import React, { useState } from 'react';
+import './styles/app.css';
+import './styles/navigation.css';
+import './styles/content-sections.css';
 import UrlInput from './components/UrlInput';
 import ScreenshotResults from './components/ScreenshotResults';
 import DesignAnalysisPanel from './components/DesignAnalysisPanel';
 import AsyncScreenshotCapture from './components/AsyncScreenshotCapture';
-import './styles/app.css';
+import Navigation from './components/Navigation';
+import ContentSections from './components/ContentSections';
 
 function App() {
   const [url, setUrl] = useState('');
-  const [screenshotResults, setScreenshotResults] = useState({});
+  const [screenshotResults, setScreenshotResults] = useState([]);
   const [isCapturing, setIsCapturing] = useState(false);
   const [analysisData, setAnalysisData] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [activeMode, setActiveMode] = useState('sync'); // 'sync' or 'async'
+  const [activeMode, setActiveMode] = useState('sync');
 
   const handleUrlSubmit = async (inputUrl) => {
-    if (!inputUrl) return;
-    
     setUrl(inputUrl);
     setIsCapturing(true);
-    
+    setIsAnalyzing(true);
+
     try {
       const result = await captureWithPuppeteer(inputUrl);
-      setScreenshotResults({ puppeteer: result });
-      
-      // Set design analysis data if available
-      if (result.designAnalysis) {
-        setAnalysisData(result.designAnalysis);
-      }
+      setScreenshotResults([result]);
+      setAnalysisData(result.designAnalysis);
     } catch (error) {
       console.error('Screenshot capture failed:', error);
     } finally {
       setIsCapturing(false);
+      setIsAnalyzing(false);
     }
   };
-
-
 
   const captureWithPuppeteer = async (inputUrl) => {
     try {
@@ -45,7 +43,7 @@ function App() {
       // Dynamic API URL - use Railway URL in production, localhost in development
       const apiBaseUrl = process.env.NODE_ENV === 'production' 
         ? window.location.origin  // Use current domain (Railway URL)
-        : 'http://localhost:5000'; // Use localhost in development
+        : 'http://localhost:3001'; // Use localhost in development (match backend port)
       
       console.log('API Base URL:', apiBaseUrl);
       console.log('Full API endpoint:', `${apiBaseUrl}/api/screenshot`);
@@ -97,40 +95,48 @@ function App() {
 
   return (
     <div className="app">
-      <header className="app-header">
-        <h1>Website Screenshot Capture</h1>
-        <p>Capture and analyze website screenshots with design insights</p>
-        
-        <div className="mode-selector">
-          <button 
-            className={`mode-btn ${activeMode === 'sync' ? 'active' : ''}`}
-            onClick={() => setActiveMode('sync')}
-          >
-            🔄 Sync Mode
-          </button>
-          <button 
-            className={`mode-btn ${activeMode === 'async' ? 'active' : ''}`}
-            onClick={() => setActiveMode('async')}
-          >
-            ⚡ Async Mode
-          </button>
-        </div>
-      </header>
+      <Navigation />
+      
+      {/* Home Section */}
+      <section id="home" className="home-section">
+        <header className="app-header">
+          <h1>Website Screenshot Capture</h1>
+          <p>Capture and analyze website screenshots with design insights</p>
+          
+          <div className="mode-selector">
+            <button 
+              className={`mode-btn ${activeMode === 'sync' ? 'active' : ''}`}
+              onClick={() => setActiveMode('sync')}
+            >
+              🔄 Sync Mode
+            </button>
+            <button 
+              className={`mode-btn ${activeMode === 'async' ? 'active' : ''}`}
+              onClick={() => setActiveMode('async')}
+            >
+              ⚡ Async Mode
+            </button>
+          </div>
+        </header>
 
-      <main className="app-main">
-        {activeMode === 'sync' ? (
-          <>
-            <UrlInput onSubmit={handleUrlSubmit} isCapturing={isCapturing} />
-            <ScreenshotResults results={screenshotResults} url={url} />
-            <DesignAnalysisPanel 
-              analysisData={analysisData}
-              isLoading={isAnalyzing}
-            />
-          </>
-        ) : (
-          <AsyncScreenshotCapture />
-        )}
-      </main>
+        <main className="app-main">
+          {activeMode === 'sync' ? (
+            <>
+              <UrlInput onSubmit={handleUrlSubmit} isCapturing={isCapturing} />
+              <ScreenshotResults results={screenshotResults} url={url} />
+              <DesignAnalysisPanel 
+                analysisData={analysisData}
+                isLoading={isAnalyzing}
+              />
+            </>
+          ) : (
+            <AsyncScreenshotCapture />
+          )}
+        </main>
+      </section>
+
+      {/* Content Sections */}
+      <ContentSections />
     </div>
   );
 }
