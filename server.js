@@ -194,6 +194,32 @@ app.get('/api/startup', (req, res) => {
   });
 });
 
+// Railway-specific health check endpoint
+app.get('/api/railway-health', (req, res) => {
+  if (!serverReady) {
+    return res.status(503).json({
+      status: 'starting',
+      timestamp: new Date().toISOString(),
+      message: 'Server is still starting up...',
+      port: PORT,
+      environment: NODE_ENV,
+      uptime: process.uptime()
+    });
+  }
+  
+  res.json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    message: 'Railway health check passed',
+    port: PORT,
+    environment: NODE_ENV,
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
+    queue: 'in-memory',
+    ready: serverReady
+  });
+});
+
 // NEW: Async screenshot endpoint
 app.post('/api/screenshot-async', async (req, res) => {
   try {
@@ -527,12 +553,34 @@ app.get('/api/analysis-results/:url', (req, res) => {
   }
 });
 
+// Simple root endpoint for basic health check
+app.get('/', (req, res) => {
+  if (!serverReady) {
+    return res.status(503).json({
+      status: 'starting',
+      message: 'Server is starting up...',
+      timestamp: new Date().toISOString()
+    });
+  }
+  res.sendFile(path.join(__dirname, 'build', 'index.html'));
+});
+
 // Serve React app for any route not handled by API (must be last)
 app.get('*', (req, res) => {
+  if (!serverReady) {
+    return res.status(503).json({
+      status: 'starting',
+      message: 'Server is starting up...',
+      timestamp: new Date().toISOString()
+    });
+  }
   res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 
 
+
+// Server readiness flag
+let serverReady = false;
 
 // Start server
 const server = app.listen(PORT, '0.0.0.0', (err) => {
@@ -541,10 +589,17 @@ const server = app.listen(PORT, '0.0.0.0', (err) => {
     process.exit(1);
   }
   
+  // Mark server as ready after a short delay
+  setTimeout(() => {
+    serverReady = true;
+    console.log('✅ Server is now ready to accept requests');
+  }, 2000);
+  
   console.log(`🚀 Screenshot Capture API running on port ${PORT}`);
   console.log(`📊 Queue stats: http://localhost:${PORT}/api/queue/stats`);
   console.log(`❤️  Health check: http://localhost:${PORT}/api/health`);
   console.log(`🌐 Server bound to 0.0.0.0:${PORT}`);
+  console.log(`🔧 Railway health: http://localhost:${PORT}/api/railway-health`);
 });
 
 // Handle server errors
@@ -554,6 +609,23 @@ server.on('error', (err) => {
     console.error(`❌ Port ${PORT} is already in use`);
   }
   process.exit(1);
+});
+
+// Graceful shutdown handling
+process.on('SIGTERM', () => {
+  console.log('🔄 Received SIGTERM, shutting down gracefully...');
+  server.close(() => {
+    console.log('✅ Server closed');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('🔄 Received SIGINT, shutting down gracefully...');
+  server.close(() => {
+    console.log('✅ Server closed');
+    process.exit(0);
+  });
 });
 
 module.exports = { app, screenshotQueue };

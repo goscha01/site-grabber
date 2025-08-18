@@ -3,8 +3,8 @@
     "builder": "nixpacks"
   },
   "deploy": {
-    "healthcheckPath": "/api/startup",
-    "healthcheckTimeout": 120,
+    "healthcheckPath": "/api/railway-health",
+    "healthcheckTimeout": 180,
     "restartPolicyType": "ON_FAILURE"
   }
 }
