@@ -23,7 +23,7 @@ const Navigation = () => {
     <nav className="navigation">
       <div className="nav-container">
         <div className="nav-logo">
-          <h2>🌐 Site Grabber</h2>
+          <h2>🌐 Web Capture</h2>
         </div>
         
         <div className={`nav-menu ${isMenuOpen ? 'active' : ''}`}>

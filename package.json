@@ -1,5 +1,5 @@
 {
-  "name": "website-screenshot-capture",
+  "name": "web-capture",
   "version": "1.0.0",
   "description": "A React app to capture screenshots of websites using Puppeteer backend",
   "main": "index.js",

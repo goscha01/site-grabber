@@ -845,7 +845,7 @@ const server = app.listen(PORT, '0.0.0.0', (err) => {
   console.log(`✅ Server maxConnections:`, server.maxConnections);
   console.log(`✅ === END SUCCESS ===`);
   
-  console.log(`🚀 Screenshot Capture API running on port ${PORT}`);
+  console.log(`🚀 Web Capture API running on port ${PORT}`);
   console.log(`📊 Queue stats: http://localhost:${PORT}/api/queue/stats`);
   console.log(`❤️  Health check: http://localhost:${PORT}/api/health`);
   console.log(`🌐 Server bound to 0.0.0.0:${PORT}`);

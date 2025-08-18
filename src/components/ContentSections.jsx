@@ -6,11 +6,11 @@ const ContentSections = () => {
       {/* About Section */}
       <section id="about" className="section about-section">
         <div className="section-container">
-          <h2>ℹ️ About Site Grabber</h2>
+          <h2>ℹ️ About Web Capture</h2>
           <div className="about-content">
             <div className="about-text">
               <p>
-                Site Grabber is a powerful web application that captures high-quality screenshots 
+                Web Capture is a powerful web application that captures high-quality screenshots 
                 of websites with advanced design analysis capabilities. Built with modern technologies 
                 including React, Express, and Puppeteer.
               </p>
@@ -43,7 +43,7 @@ const ContentSections = () => {
           <h2>🔌 API Documentation</h2>
           <div className="api-content">
             <p>
-              Site Grabber provides a comprehensive REST API for integrating screenshot 
+              Web Capture provides a comprehensive REST API for integrating screenshot 
               capabilities into your applications.
             </p>
             
@@ -92,10 +92,10 @@ const ContentSections = () => {
           <div className="blog-content">
             <div className="blog-posts">
               <article className="blog-post">
-                <h3>🚀 Site Grabber v2.0 Released</h3>
+                <h3>🚀 Web Capture v2.0 Released</h3>
                 <p className="post-meta">August 18, 2025 • New Features</p>
                 <p>
-                  We're excited to announce the release of Site Grabber v2.0! This major update 
+                  We're excited to announce the release of Web Capture v2.0! This major update 
                   includes enhanced Cloudflare bypass capabilities, improved design analysis, 
                   and a completely redesigned user interface.
                 </p>
@@ -144,13 +144,13 @@ const ContentSections = () => {
           <h2>📧 Contact Us</h2>
           <div className="contact-content">
             <div className="contact-info">
-              <div className="contact-card">
-                <h3>💬 Get in Touch</h3>
-                <p>
-                  Have questions about Site Grabber? Want to discuss integration possibilities? 
-                  We'd love to hear from you!
-                </p>
-              </div>
+                             <div className="contact-card">
+                 <h3>💬 Get in Touch</h3>
+                 <p>
+                   Have questions about Web Capture? Want to discuss integration possibilities? 
+                   We'd love to hear from you!
+                 </p>
+               </div>
               
               <div className="contact-card">
                 <h3>📧 Email</h3>

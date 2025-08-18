@@ -4,7 +4,7 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-console.log('🚀 Starting Site Grabber Server...');
+console.log('🚀 Starting Web Capture Server...');
 
 // Check if build folder exists
 const buildPath = path.join(__dirname, 'build');
