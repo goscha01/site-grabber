@@ -3,8 +3,8 @@
     "builder": "nixpacks"
   },
   "deploy": {
-    "healthcheckPath": "/api/health",
-    "healthcheckTimeout": 60,
+    "healthcheckPath": "/api/startup",
+    "healthcheckTimeout": 120,
     "restartPolicyType": "ON_FAILURE"
   }
 }

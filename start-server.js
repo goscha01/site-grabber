@@ -33,6 +33,12 @@ if (process.env.NODE_ENV === 'production') {
   }
 }
 
+// Log environment info
+console.log(`🌍 NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
+console.log(`🔌 PORT: ${process.env.PORT || '5000'}`);
+console.log(`📁 Working directory: ${process.cwd()}`);
+console.log(`📦 Node version: ${process.version}`);
+
 // Start the server
 console.log('🌐 Starting server...');
 try {
