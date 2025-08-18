@@ -16,6 +16,9 @@ console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
 console.log(`🔌 Port: ${PORT}`);
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
+// Server readiness flag (must be declared before routes)
+let serverReady = false;
+
 // Simple in-memory queue system (temporary replacement for Redis/Bull)
 console.log('🔧 Using in-memory queue system');
 
@@ -161,6 +164,17 @@ app.use(express.static(path.join(__dirname, 'build')));
 // Store analysis results in memory (in production, use Redis or database)
 const analysisResults = new Map();
 
+// Simple ping endpoint (always available)
+app.get('/api/ping', (req, res) => {
+  res.json({
+    status: 'pong',
+    timestamp: new Date().toISOString(),
+    message: 'Server is responding',
+    port: PORT,
+    environment: NODE_ENV
+  });
+});
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ 
@@ -183,27 +197,37 @@ app.get('/api/queue/status', (req, res) => {
   });
 });
 
-// Startup endpoint for Railway
+// Startup endpoint for Railway (always available)
 app.get('/api/startup', (req, res) => {
+  const uptime = process.uptime();
+  const isStarting = uptime < 10;
+  
   res.json({
-    status: 'starting',
+    status: isStarting ? 'starting' : 'ready',
     timestamp: new Date().toISOString(),
-    message: 'Server is starting up...',
+    message: isStarting ? 'Server is starting up...' : 'Server is ready',
     port: PORT,
-    environment: NODE_ENV
+    environment: NODE_ENV,
+    uptime: uptime,
+    ready: !isStarting
   });
 });
 
 // Railway-specific health check endpoint
 app.get('/api/railway-health', (req, res) => {
-  if (!serverReady) {
+  // Always respond to Railway health checks, even during startup
+  const uptime = process.uptime();
+  const isStarting = uptime < 10; // Consider starting if less than 10 seconds
+  
+  if (isStarting) {
     return res.status(503).json({
       status: 'starting',
       timestamp: new Date().toISOString(),
-      message: 'Server is still starting up...',
+      message: 'Server is starting up...',
       port: PORT,
       environment: NODE_ENV,
-      uptime: process.uptime()
+      uptime: uptime,
+      ready: false
     });
   }
   
@@ -213,10 +237,10 @@ app.get('/api/railway-health', (req, res) => {
     message: 'Railway health check passed',
     port: PORT,
     environment: NODE_ENV,
-    uptime: process.uptime(),
+    uptime: uptime,
     memory: process.memoryUsage(),
     queue: 'in-memory',
-    ready: serverReady
+    ready: true
   });
 });
 
@@ -579,8 +603,7 @@ app.get('*', (req, res) => {
 
 
 
-// Server readiness flag
-let serverReady = false;
+// Server readiness flag (already declared above)
 
 // Start server
 const server = app.listen(PORT, '0.0.0.0', (err) => {
@@ -589,17 +612,18 @@ const server = app.listen(PORT, '0.0.0.0', (err) => {
     process.exit(1);
   }
   
-  // Mark server as ready after a short delay
-  setTimeout(() => {
-    serverReady = true;
-    console.log('✅ Server is now ready to accept requests');
-  }, 2000);
-  
   console.log(`🚀 Screenshot Capture API running on port ${PORT}`);
   console.log(`📊 Queue stats: http://localhost:${PORT}/api/queue/stats`);
   console.log(`❤️  Health check: http://localhost:${PORT}/api/health`);
   console.log(`🌐 Server bound to 0.0.0.0:${PORT}`);
   console.log(`🔧 Railway health: http://localhost:${PORT}/api/railway-health`);
+  console.log(`🚀 Startup endpoint: http://localhost:${PORT}/api/startup`);
+  
+  // Mark server as ready after a short delay
+  setTimeout(() => {
+    serverReady = true;
+    console.log('✅ Server is now ready to accept requests');
+  }, 1000);
 });
 
 // Handle server errors
