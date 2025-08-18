@@ -39,6 +39,16 @@ function App() {
   const captureWithPuppeteer = async (inputUrl) => {
     try {
       console.log('Using real Puppeteer backend for:', inputUrl);
+      console.log('Current environment:', process.env.NODE_ENV);
+      console.log('Current location:', window.location.href);
+      
+      // Dynamic API URL - use Railway URL in production, localhost in development
+      const apiBaseUrl = process.env.NODE_ENV === 'production' 
+        ? window.location.origin  // Use current domain (Railway URL)
+        : 'http://localhost:5000'; // Use localhost in development
+      
+      console.log('API Base URL:', apiBaseUrl);
+      console.log('Full API endpoint:', `${apiBaseUrl}/api/screenshot`);
       
       // Call the real Puppeteer backend
       const requestBody = {
@@ -49,7 +59,7 @@ function App() {
       };
       console.log('Request body:', requestBody);
       
-      const response = await fetch('http://localhost:5000/api/screenshot', {
+      const response = await fetch(`${apiBaseUrl}/api/screenshot`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
