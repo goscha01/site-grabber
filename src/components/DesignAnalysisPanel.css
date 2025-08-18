@@ -65,19 +65,43 @@
   gap: 30px;
 }
 
-.dominant-colors {
-  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+/* Color Section Styles */
+.color-section {
   border-radius: 16px;
   padding: 30px;
   border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
 }
 
-.dominant-colors h4 {
+.color-section:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.dominant-section {
+  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+  border-left: 4px solid #667eea;
+}
+
+.accent-section {
+  background: linear-gradient(135deg, #fef7ff, #f3e8ff);
+  border-left: 4px solid #a855f7;
+}
+
+.color-section h4 {
   font-size: 1.5rem;
   font-weight: 700;
-  margin-bottom: 25px;
+  margin-bottom: 15px;
   color: #1a202c;
   text-align: center;
+}
+
+.section-description {
+  text-align: center;
+  color: #64748b;
+  margin-bottom: 25px;
+  font-size: 0.95rem;
+  line-height: 1.5;
 }
 
 .color-grid {
@@ -99,6 +123,14 @@
   align-items: center;
   justify-content: flex-end;
   padding-bottom: 12px;
+}
+
+.dominant-swatch {
+  border: 2px solid rgba(102, 126, 234, 0.3);
+}
+
+.accent-swatch {
+  border: 2px solid rgba(168, 85, 247, 0.3);
 }
 
 .color-swatch:hover {
