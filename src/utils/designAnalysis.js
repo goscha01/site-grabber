@@ -13,22 +13,108 @@ const analyzeSiteDesign = async (url, existingPage = null) => {
   try {
     if (existingPage) {
       page = existingPage;
-      console.log('🎨 Using existing page for design analysis');
+      console.log('✅ Using existing page for design analysis');
     } else {
-      const puppeteer = require('puppeteer');
-      browser = await puppeteer.launch({ headless: true });
+      console.log('🚀 Launching new browser for design analysis');
+      browser = await puppeteer.launch({ 
+        headless: true,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-gpu',
+          '--disable-blink-features=AutomationControlled',
+          '--disable-web-security',
+          '--disable-features=VizDisplayCompositor',
+          '--disable-extensions',
+          '--no-first-run',
+          '--disable-default-apps',
+          '--disable-popup-blocking',
+          '--disable-background-timer-throttling',
+          '--disable-backgrounding-occluded-windows',
+          '--disable-renderer-backgrounding',
+          '--disable-features=TranslateUI',
+          '--disable-ipc-flooding-protection',
+          '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        ]
+      });
+      
       page = await browser.newPage();
       shouldCloseBrowser = true;
       
-      // Navigate to URL only if we created a new page
-      console.log(`🌐 Navigating to URL for design analysis: ${url}`);
-      await page.goto(url, { 
-        waitUntil: 'networkidle0',
-        timeout: 30000 
+      // Set realistic user agent and viewport
+      await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+      await page.setViewport({ width: 1920, height: 1080 });
+      
+      // Set additional headers to look more human
+      await page.setExtraHTTPHeaders({
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Sec-Fetch-User': '?1',
+        'Upgrade-Insecure-Requests': '1'
       });
       
-      // Wait a bit for content to load
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Remove webdriver property
+      await page.evaluateOnNewDocument(() => {
+        delete navigator.__proto__.webdriver;
+        Object.defineProperty(navigator, 'webdriver', {
+          get: () => undefined,
+        });
+      });
+      
+      console.log(`🌐 Navigating to: ${url}`);
+      await page.goto(url, { 
+        waitUntil: 'domcontentloaded',
+        timeout: 60000 
+      });
+      
+      // Wait longer for Cloudflare challenges
+      console.log(`⏳ Waiting for page to fully load...`);
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      
+      // Check if there's a Cloudflare challenge
+      const cloudflareCheck = await page.evaluate(() => {
+        const bodyText = document.body.innerText.toLowerCase();
+        return bodyText.includes('checking your browser') || 
+               bodyText.includes('verify you are human') ||
+               bodyText.includes('cloudflare') ||
+               bodyText.includes('captcha');
+      });
+      
+      if (cloudflareCheck) {
+        console.log(`⚠️  Cloudflare challenge detected, waiting longer...`);
+        await new Promise(resolve => setTimeout(resolve, 15000));
+        
+        // Try to wait for the challenge to complete
+        try {
+          await page.waitForFunction(() => {
+            const bodyText = document.body.innerText.toLowerCase();
+            return !bodyText.includes('checking your browser') && 
+                   !bodyText.includes('verify you are human') &&
+                   !bodyText.includes('cloudflare') &&
+                   !bodyText.includes('captcha');
+          }, { timeout: 30000 });
+          console.log(`✅ Cloudflare challenge completed`);
+        } catch (waitError) {
+          console.log(`⚠️  Still waiting for challenge, proceeding anyway...`);
+        }
+      }
+      
+      // Wait for network to be idle
+      try {
+        await page.waitForFunction(() => {
+          return document.readyState === 'complete';
+        }, { timeout: 10000 });
+        console.log(`✅ Page fully loaded`);
+      } catch (readyError) {
+        console.log(`⚠️  Page ready state timeout, proceeding...`);
+      }
     }
     
     // Extract fonts from the page

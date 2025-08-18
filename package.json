@@ -4,13 +4,13 @@
   "description": "A React app to capture screenshots of websites using Puppeteer backend",
   "main": "index.js",
   "scripts": {
-    "start": "node start-server.js",
+    "start": "cross-env PORT=5000 node start-server.js",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "server": "node start-server.js",
-    "server:dev": "nodemon start-server.js",
-    "server:direct": "node server.js"
+    "server": "cross-env PORT=5000 node start-server.js",
+    "server:dev": "cross-env PORT=3001 nodemon start-server.js",
+    "server:direct": "cross-env PORT=5000 node server.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -33,5 +33,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "cross-env": "^10.0.0"
   }
 }
