@@ -21,15 +21,13 @@ if (!fs.existsSync(buildPath)) {
   console.log('✅ Build folder found');
 }
 
-// In production, always ensure we have a fresh build
+// In production, skip rebuilding since Railway already built it
 if (process.env.NODE_ENV === 'production') {
-  console.log('🏭 Production mode: Ensuring fresh build...');
-  try {
-    execSync('npm run build', { stdio: 'inherit' });
-    console.log('✅ Production build completed successfully');
-  } catch (error) {
-    console.error('❌ Production build failed:', error.message);
-    process.exit(1);
+  console.log('🏭 Production mode: Using existing build from Railway...');
+  if (fs.existsSync(buildPath)) {
+    console.log('✅ Production build folder exists, proceeding...');
+  } else {
+    console.log('⚠️  No build folder in production, this might cause issues');
   }
 }
 
@@ -49,5 +47,6 @@ try {
   console.log('✅ Server started successfully');
 } catch (error) {
   console.error('❌ Failed to start server:', error.message);
+  console.error('❌ Error stack:', error.stack);
   process.exit(1);
 }

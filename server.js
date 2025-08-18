@@ -211,6 +211,38 @@ app.use(express.static(path.join(__dirname, 'build')));
 // Store analysis results in memory (in production, use Redis or database)
 const analysisResults = new Map();
 
+// Simple root endpoint for basic health check
+app.get('/', (req, res) => {
+  console.log('🏠 === ROOT ENDPOINT CALLED ===');
+  console.log('🏠 Time:', new Date().toISOString());
+  console.log('🏠 Server ready:', serverReady);
+  console.log('🏠 === END ROOT ===');
+  
+  if (!serverReady) {
+    return res.status(503).json({
+      status: 'starting',
+      message: 'Server is starting up...',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime()
+    });
+  }
+  res.sendFile(path.join(__dirname, 'build', 'index.html'));
+});
+
+// Simple health check endpoint (always responds, no dependencies)
+app.get('/health', (req, res) => {
+  console.log('❤️  === SIMPLE HEALTH CHECK ===');
+  console.log('❤️  Time:', new Date().toISOString());
+  console.log('❤️  === END HEALTH ===');
+  
+  res.status(200).json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    message: 'Simple health check responding',
+    uptime: process.uptime()
+  });
+});
+
 // Simple test endpoint (always responds, no server readiness check)
 app.get('/api/test', (req, res) => {
   console.log('🧪 === TEST ENDPOINT CALLED ===');
@@ -748,18 +780,6 @@ app.get('/api/analysis-results/:url', (req, res) => {
   } else {
     res.status(404).json({ error: 'Analysis results not found' });
   }
-});
-
-// Simple root endpoint for basic health check
-app.get('/', (req, res) => {
-  if (!serverReady) {
-    return res.status(503).json({
-      status: 'starting',
-      message: 'Server is starting up...',
-      timestamp: new Date().toISOString()
-    });
-  }
-  res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 
 // Serve React app for any route not handled by API (must be last)

@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "cross-env PORT=5000 node start-server.js",
+    "start:prod": "cross-env NODE_ENV=production node server.js",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
