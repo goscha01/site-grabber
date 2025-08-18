@@ -1,6 +1,18 @@
 // Load environment variables
 require('dotenv').config();
 
+console.log('🔧 === SERVER STARTUP DEBUG ===');
+console.log('🔧 Current working directory:', process.cwd());
+console.log('🔧 Node version:', process.version);
+console.log('🔧 Platform:', process.platform);
+console.log('🔧 Architecture:', process.arch);
+console.log('🔧 Environment variables:');
+console.log('  - NODE_ENV:', process.env.NODE_ENV);
+console.log('  - PORT:', process.env.PORT);
+console.log('  - PWD:', process.env.PWD);
+console.log('  - HOME:', process.env.HOME);
+console.log('🔧 === END DEBUG ===');
+
 const express = require('express');
 const puppeteer = require('puppeteer');
 const cors = require('cors');
@@ -8,12 +20,16 @@ const path = require('path');
 const helmet = require('helmet');
 const morgan = require('morgan');
 
+console.log('✅ All modules loaded successfully');
+
 const { analyzeSiteDesign } = require('./src/utils/designAnalysis');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
 console.log(`🔌 Port: ${PORT}`);
+console.log(`🔌 Port type: ${typeof PORT}`);
+console.log(`🔌 Port parsed: ${parseInt(PORT)}`);
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
 // Server readiness flag (must be declared before routes)
@@ -195,26 +211,60 @@ app.use(express.static(path.join(__dirname, 'build')));
 // Store analysis results in memory (in production, use Redis or database)
 const analysisResults = new Map();
 
+// Simple test endpoint (always responds, no server readiness check)
+app.get('/api/test', (req, res) => {
+  console.log('🧪 === TEST ENDPOINT CALLED ===');
+  console.log('🧪 Time:', new Date().toISOString());
+  console.log('🧪 Server ready flag:', serverReady);
+  console.log('🧪 === END TEST ===');
+  
+  res.status(200).json({
+    status: 'test-ok',
+    timestamp: new Date().toISOString(),
+    message: 'Test endpoint responding',
+    serverReady: serverReady,
+    uptime: process.uptime()
+  });
+});
+
 // Simple ping endpoint (always available)
 app.get('/api/ping', (req, res) => {
   try {
-    console.log(`🏓 Ping request received at ${new Date().toISOString()}`);
+    const timestamp = new Date().toISOString();
+    console.log(`🏓 === PING REQUEST RECEIVED ===`);
+    console.log(`🏓 Time: ${timestamp}`);
+    console.log(`🏓 Request IP: ${req.ip}`);
+    console.log(`🏓 Request headers:`, req.headers);
+    console.log(`🏓 Request method: ${req.method}`);
+    console.log(`🏓 Request URL: ${req.url}`);
+    console.log(`🏓 Server ready: ${serverReady}`);
+    console.log(`🏓 Server listening: ${server ? server.listening : 'NO SERVER'}`);
+    console.log(`🏓 === END PING REQUEST ===`);
+    
     res.status(200).json({
       status: 'pong',
-      timestamp: new Date().toISOString(),
+      timestamp: timestamp,
       message: 'Server is responding',
       port: PORT,
       environment: NODE_ENV,
       uptime: process.uptime(),
-      ready: true
+      ready: true,
+      serverListening: server ? server.listening : false,
+      serverAddress: server ? server.address() : null
     });
   } catch (error) {
-    console.error('❌ Error in ping endpoint:', error);
+    console.error('❌ === ERROR IN PING ENDPOINT ===');
+    console.error('❌ Error:', error);
+    console.error('❌ Error message:', error.message);
+    console.error('❌ Error stack:', error.stack);
+    console.error('❌ === END ERROR ===');
+    
     res.status(500).json({
       status: 'error',
       timestamp: new Date().toISOString(),
       message: 'Server error in ping endpoint',
-      error: error.message
+      error: error.message,
+      stack: error.stack
     });
   }
 });
@@ -729,11 +779,28 @@ app.get('*', (req, res) => {
 // Server readiness flag (already declared above)
 
 // Start server
+console.log('🚀 === STARTING SERVER ===');
+console.log(`🚀 Attempting to bind to port ${PORT}`);
+console.log(`🚀 Binding to address: 0.0.0.0`);
+console.log(`🚀 Current time: ${new Date().toISOString()}`);
+
 const server = app.listen(PORT, '0.0.0.0', (err) => {
   if (err) {
-    console.error('❌ Failed to start server:', err);
+    console.error('❌ === SERVER STARTUP FAILED ===');
+    console.error('❌ Error details:', err);
+    console.error('❌ Error code:', err.code);
+    console.error('❌ Error message:', err.message);
+    console.error('❌ Error stack:', err.stack);
+    console.error('❌ === END ERROR ===');
     process.exit(1);
   }
+  
+  console.log('✅ === SERVER STARTUP SUCCESS ===');
+  console.log(`✅ Server successfully bound to port ${PORT}`);
+  console.log(`✅ Server address:`, server.address());
+  console.log(`✅ Server listening:`, server.listening);
+  console.log(`✅ Server maxConnections:`, server.maxConnections);
+  console.log(`✅ === END SUCCESS ===`);
   
   console.log(`🚀 Screenshot Capture API running on port ${PORT}`);
   console.log(`📊 Queue stats: http://localhost:${PORT}/api/queue/stats`);
@@ -747,11 +814,23 @@ const server = app.listen(PORT, '0.0.0.0', (err) => {
   serverReady = true;
   console.log('✅ Server is now ready to accept requests');
   console.log('✅ Health check endpoints are now responding');
+  console.log(`✅ Server ready at: ${new Date().toISOString()}`);
 });
 
 // Handle server errors
 server.on('error', (err) => {
-  console.error('❌ Server error:', err);
+  console.error('❌ === SERVER ERROR EVENT ===');
+  console.error('❌ Error details:', err);
+  console.error('❌ Error code:', err.code);
+  console.error('❌ Error message:', err.message);
+  console.error('❌ Error stack:', err.stack);
+  console.error('❌ Server state:', {
+    listening: server.listening,
+    address: server.address(),
+    maxConnections: server.maxConnections
+  });
+  console.error('❌ === END SERVER ERROR ===');
+  
   if (err.code === 'EADDRINUSE') {
     console.error(`❌ Port ${PORT} is already in use`);
   } else if (err.code === 'EACCES') {
@@ -766,8 +845,42 @@ server.on('error', (err) => {
 // Handle server listening event
 server.on('listening', () => {
   const addr = server.address();
+  console.log('🎯 === SERVER LISTENING EVENT ===');
   console.log(`🎯 Server listening on ${addr.address}:${addr.port}`);
-  console.log(`🌐 Server accessible at http://0.0.0.0:${PORT}`);
+  console.log(`🎯 Server accessible at http://0.0.0.0:${PORT}`);
+  console.log(`🎯 Server state:`, {
+    listening: server.listening,
+    address: addr,
+    maxConnections: server.maxConnections
+  });
+  console.log('🎯 === END LISTENING EVENT ===');
+});
+
+// Process exit handlers for debugging
+process.on('exit', (code) => {
+  console.log('🔄 === PROCESS EXIT ===');
+  console.log(`🔄 Exit code: ${code}`);
+  console.log(`🔄 Time: ${new Date().toISOString()}`);
+  console.log('🔄 === END EXIT ===');
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('💥 === UNCAUGHT EXCEPTION ===');
+  console.error('💥 Error:', error);
+  console.error('💥 Error message:', error.message);
+  console.error('💥 Error stack:', error.stack);
+  console.error('💥 Time:', new Date().toISOString());
+  console.error('💥 === END UNCAUGHT EXCEPTION ===');
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('💥 === UNHANDLED REJECTION ===');
+  console.error('💥 Reason:', reason);
+  console.error('💥 Promise:', promise);
+  console.error('💥 Time:', new Date().toISOString());
+  console.error('💥 === END UNHANDLED REJECTION ===');
+  process.exit(1);
 });
 
 // Graceful shutdown handling
