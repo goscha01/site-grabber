@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import UrlInput from './components/UrlInput';
 import ScreenshotResults from './components/ScreenshotResults';
-
 import DesignAnalysisPanel from './components/DesignAnalysisPanel';
+import AsyncScreenshotCapture from './components/AsyncScreenshotCapture';
 import './styles/app.css';
 
 function App() {
@@ -11,7 +11,7 @@ function App() {
   const [isCapturing, setIsCapturing] = useState(false);
   const [analysisData, setAnalysisData] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-
+  const [activeMode, setActiveMode] = useState('sync'); // 'sync' or 'async'
 
   const handleUrlSubmit = async (inputUrl) => {
     if (!inputUrl) return;
@@ -23,8 +23,10 @@ function App() {
       const result = await captureWithPuppeteer(inputUrl);
       setScreenshotResults({ puppeteer: result });
       
-      // Start polling for design analysis results
-      pollForAnalysisResults(inputUrl);
+      // Set design analysis data if available
+      if (result.designAnalysis) {
+        setAnalysisData(result.designAnalysis);
+      }
     } catch (error) {
       console.error('Screenshot capture failed:', error);
     } finally {
@@ -32,47 +34,7 @@ function App() {
     }
   };
 
-  const pollForAnalysisResults = async (inputUrl) => {
-    setIsAnalyzing(true);
-    let attempts = 0;
-    const maxAttempts = 30; // 30 seconds max
-    
-    const poll = async () => {
-      try {
-        const response = await fetch(`http://localhost:5000/api/analysis-results/${encodeURIComponent(inputUrl)}`);
-        
-        if (response.ok) {
-          const result = await response.json();
-          setAnalysisData(result.analysis);
-          setIsAnalyzing(false);
-          console.log('✅ Design analysis results received');
-          return;
-        }
-        
-        attempts++;
-        if (attempts < maxAttempts) {
-          // Wait 1 second before next attempt
-          setTimeout(poll, 1000);
-        } else {
-          console.log('⏰ Design analysis polling timeout');
-          setIsAnalyzing(false);
-          setAnalysisData(null);
-        }
-      } catch (error) {
-        console.error('Polling error:', error);
-        attempts++;
-        if (attempts < maxAttempts) {
-          setTimeout(poll, 1000);
-        } else {
-          setIsAnalyzing(false);
-          setAnalysisData(null);
-        }
-      }
-    };
-    
-    // Start polling
-    poll();
-  };
+
 
   const captureWithPuppeteer = async (inputUrl) => {
     try {
@@ -94,48 +56,32 @@ function App() {
         },
         body: JSON.stringify(requestBody)
       });
-
+      
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || `HTTP ${response.status}`);
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
       }
-
-      // Convert blob to data URL
-      const blob = await response.blob();
-      const dataUrl = await new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result);
-        reader.readAsDataURL(blob);
-      });
-
+      
+      const responseData = await response.json();
+      
+      if (!responseData.success) {
+        throw new Error(responseData.error || 'Screenshot capture failed');
+      }
+      
+      const dataUrl = `data:image/png;base64,${responseData.screenshot}`;
+      
       return {
+        method: 'Puppeteer',
         imageData: dataUrl,
         width: 1200,
         height: 800,
-        method: 'puppeteer',
-        note: 'Real Puppeteer backend capture - Full Page - No CORS limitations!'
+        note: 'Full page screenshot captured using Puppeteer backend',
+        designAnalysis: responseData.designAnalysis
       };
+      
     } catch (error) {
-      console.error('Puppeteer backend error:', error);
-      
-      // Fallback to simulation if backend is not available
-      if (error.message.includes('fetch') || error.message.includes('Failed to fetch')) {
-        return {
-          imageData: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIwMCIgaGVpZ2h0PSI4MDAiIHZpZXdCb3g9IjAgMCAxMjAwIDgwMCI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iI2Y4ZjlmYSIvPjx0ZXh0IHg9IjYwMCIgeT0iNDAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjQiIGZpbGw9IiM2Yzc1N2QiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlB1cHBldGVyIEJhY2tlbmQgVW5hdmFpbGFibGU8L3RleHQ+PC9zdmc+',
-          width: 1200,
-          height: 800,
-          method: 'puppeteer',
-          note: 'Backend server not running. Start with: npm run server'
-        };
-      }
-      
-      return {
-        imageData: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIwMCIgaGVpZ2h0PSI4MDAiIHZpZXdCb3g9IjAgMCAxMjAwIDgwMCI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iI2Y4ZjlmYSIvPjx0ZXh0IHg9IjYwMCIgeT0iNDAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjQiIGZpbGw9IiM2Yzc1N2QiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlB1cHBldGVyIEVycm9yPC90ZXh0Pjwvc3ZnPg==',
-        width: 1200,
-        height: 800,
-        method: 'puppeteer',
-        note: `Error: ${error.message}`
-      };
+      console.error('Puppeteer capture failed:', error);
+      throw error;
     }
   };
 
@@ -143,19 +89,37 @@ function App() {
     <div className="app">
       <header className="app-header">
         <h1>Website Screenshot Capture</h1>
-        <p>Capture screenshots of websites using Puppeteer backend</p>
+        <p>Capture and analyze website screenshots with design insights</p>
         
-
+        <div className="mode-selector">
+          <button 
+            className={`mode-btn ${activeMode === 'sync' ? 'active' : ''}`}
+            onClick={() => setActiveMode('sync')}
+          >
+            🔄 Sync Mode
+          </button>
+          <button 
+            className={`mode-btn ${activeMode === 'async' ? 'active' : ''}`}
+            onClick={() => setActiveMode('async')}
+          >
+            ⚡ Async Mode
+          </button>
+        </div>
       </header>
-      
-      <main className="app-main">
-        <UrlInput onSubmit={handleUrlSubmit} isCapturing={isCapturing} />
-        <ScreenshotResults results={screenshotResults} url={url} />
 
-        <DesignAnalysisPanel 
-          analysisData={analysisData}
-          isLoading={isAnalyzing}
-        />
+      <main className="app-main">
+        {activeMode === 'sync' ? (
+          <>
+            <UrlInput onSubmit={handleUrlSubmit} isCapturing={isCapturing} />
+            <ScreenshotResults results={screenshotResults} url={url} />
+            <DesignAnalysisPanel 
+              analysisData={analysisData}
+              isLoading={isAnalyzing}
+            />
+          </>
+        ) : (
+          <AsyncScreenshotCapture />
+        )}
       </main>
     </div>
   );

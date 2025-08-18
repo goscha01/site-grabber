@@ -1,46 +1,47 @@
 #!/usr/bin/env node
 
-const { spawn } = require('child_process');
+const { execSync } = require('child_process');
+const fs = require('fs');
 const path = require('path');
 
-console.log('🚀 Starting Screenshot Server...');
-console.log('📁 Working directory:', process.cwd());
-console.log('📦 Node version:', process.version);
-console.log('🖥️ Platform:', process.platform);
+console.log('🚀 Starting Site Grabber Server...');
 
 // Check if build folder exists
-const buildPath = path.join(process.cwd(), 'build');
-const fs = require('fs');
-
+const buildPath = path.join(__dirname, 'build');
 if (!fs.existsSync(buildPath)) {
-  console.log('⚠️ Build folder not found. Building React app first...');
-  
-  const buildProcess = spawn('npm', ['run', 'build'], {
-    stdio: 'inherit',
-    shell: true
-  });
-  
-  buildProcess.on('close', (code) => {
-    if (code === 0) {
-      console.log('✅ Build completed. Starting server...');
-      startServer();
-    } else {
-      console.error('❌ Build failed with code:', code);
-      process.exit(1);
-    }
-  });
-} else {
-  console.log('✅ Build folder found. Starting server...');
-  startServer();
-}
-
-function startServer() {
-  console.log('🔧 Starting Express server...');
-  
+  console.log('📦 Build folder not found. Building React app...');
   try {
-    require('./server.js');
+    execSync('npm run build', { stdio: 'inherit' });
+    console.log('✅ Build completed successfully');
   } catch (error) {
-    console.error('❌ Failed to start server:', error);
+    console.error('❌ Build failed:', error.message);
     process.exit(1);
   }
+} else {
+  console.log('✅ Build folder found');
+}
+
+// In production, always ensure we have a fresh build
+if (process.env.NODE_ENV === 'production') {
+  console.log('🏭 Production mode: Ensuring fresh build...');
+  try {
+    execSync('npm run build', { stdio: 'inherit' });
+    console.log('✅ Production build completed successfully');
+  } catch (error) {
+    console.error('❌ Production build failed:', error.message);
+    process.exit(1);
+  }
+}
+
+// Start the server
+console.log('🌐 Starting server...');
+try {
+  // Workers are now started directly in server.js
+  
+  // Start the server
+  require('./server');
+  console.log('✅ Server started successfully');
+} catch (error) {
+  console.error('❌ Failed to start server:', error.message);
+  process.exit(1);
 }
