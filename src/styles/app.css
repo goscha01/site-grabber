@@ -627,14 +627,7 @@ body {
   font-size: 1.2rem;
 }
 
-.method-badge {
-  background: rgba(255, 255, 255, 0.2);
-  padding: 0.3rem 0.8rem;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-transform: uppercase;
-}
+
 
 .result-content {
   padding: 1.5rem;
@@ -834,16 +827,7 @@ body {
   color: #6c757d;
 }
 
-.info-item.note {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.5rem;
-}
 
-.info-item.note span:last-child {
-  font-size: 0.9rem;
-  line-height: 1.4;
-}
 
 .screenshot-actions {
   text-align: center;

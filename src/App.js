@@ -23,7 +23,7 @@ function App() {
     setIsAnalyzing(true);
 
     try {
-      const result = await captureWithPuppeteer(inputUrl);
+      const result = await captureWithScreenshotUrl(inputUrl);
       setScreenshotResults([result]);
       setAnalysisData(result.designAnalysis);
     } catch (error) {
@@ -34,9 +34,9 @@ function App() {
     }
   };
 
-  const captureWithPuppeteer = async (inputUrl) => {
+  const captureWithScreenshotUrl = async (inputUrl) => {
     try {
-      console.log('Using real Puppeteer backend for:', inputUrl);
+      console.log('Using Screenshot URL backend for:', inputUrl);
       console.log('Current environment:', process.env.NODE_ENV);
       console.log('Current location:', window.location.href);
       
@@ -48,7 +48,7 @@ function App() {
       console.log('API Base URL:', apiBaseUrl);
       console.log('Full API endpoint:', `${apiBaseUrl}/api/screenshot`);
       
-      // Call the real Puppeteer backend
+      // Call the Screenshot URL backend
       const requestBody = {
         url: inputUrl,
         width: 1200,
@@ -79,16 +79,15 @@ function App() {
       const dataUrl = `data:image/png;base64,${responseData.screenshot}`;
       
       return {
-        method: 'Puppeteer',
+        method: 'Screenshot URL',
         imageData: dataUrl,
         width: 1200,
         height: 800,
-        note: 'Full page screenshot captured using Puppeteer backend',
         designAnalysis: responseData.designAnalysis
       };
       
     } catch (error) {
-      console.error('Puppeteer capture failed:', error);
+      console.error('Screenshot capture failed:', error);
       throw error;
     }
   };

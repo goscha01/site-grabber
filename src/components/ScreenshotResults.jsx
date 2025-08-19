@@ -38,16 +38,11 @@ const ScreenshotResults = ({ results, url }) => {
   return (
     <>
       <section className="screenshot-results">
-        <h2>Screenshots for: {url}</h2>
-        
-
-        
         <div className="results-grid">
           {Object.entries(results).map(([method, result]) => (
             <div key={method} className="result-card">
               <div className="result-header">
                 <h3>{result.method || method}</h3>
-                <div className="method-badge">{method}</div>
               </div>
               
               <div className="result-content">
@@ -67,13 +62,6 @@ const ScreenshotResults = ({ results, url }) => {
                     <span>Dimensions:</span>
                     <span>{result.width} × {result.height}</span>
                   </div>
-                  
-                  {result.note && (
-                    <div className="info-item note">
-                      <span>Note:</span>
-                      <span>{result.note}</span>
-                    </div>
-                  )}
                   
                   <div className="screenshot-actions">
                     <button 

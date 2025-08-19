@@ -266,6 +266,7 @@
   color: #64748b;
 }
 
+/* Font List Styles */
 .font-list {
   display: grid;
   gap: 30px;
@@ -281,7 +282,7 @@
 .font-summary h4 {
   font-size: 1.5rem;
   font-weight: 700;
-  margin-bottom: 25px;
+  margin-bottom: 20px;
   color: #1a202c;
   text-align: center;
 }
@@ -289,35 +290,26 @@
 .font-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 12px;
   justify-content: center;
 }
 
 .font-chip {
-  background: white;
-  border: 2px solid #e2e8f0;
-  border-radius: 25px;
-  padding: 12px 20px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
   font-size: 0.875rem;
   font-weight: 600;
-  color: #4a5568;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
-  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
 }
 
-.font-chip:hover {
-  border-color: #667eea;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.15);
-}
-
+/* Font Family Details */
 .font-details {
   background: white;
   border-radius: 16px;
   padding: 30px;
   border: 1px solid #e2e8f0;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
 }
 
 .font-details h4 {
@@ -328,59 +320,289 @@
   text-align: center;
 }
 
-.font-detail {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  padding: 20px;
-  margin-bottom: 16px;
-  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+.font-family-detail {
+  border: 1px solid #e2e8f0;
   border-radius: 12px;
-  border-left: 5px solid transparent;
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
-
-.font-detail:hover {
-  background: linear-gradient(135deg, #edf2f7, #e2e8f0);
-  border-left-color: #667eea;
-  transform: translateX(4px);
-}
-
-.font-preview {
-  flex: 1;
-  padding: 16px;
+  padding: 20px;
+  margin-bottom: 20px;
   background: white;
-  border-radius: 8px;
-  border: 2px solid #e2e8f0;
-  min-height: 70px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.font-family-detail:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Line 1: Font name with badges */
+.font-name-line {
   display: flex;
   align-items: center;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-  transition: transform 0.3s ease;
-}
-
-.font-detail:hover .font-preview {
-  transform: scale(1.02);
-}
-
-.font-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 140px;
+  gap: 10px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
 }
 
 .font-name {
+  color: #1a202c;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+/* Line 2: Usage context */
+.font-usage-line {
+  color: #64748b;
+  font-size: 0.875rem;
+  margin-bottom: 12px;
+}
+
+/* Line 3: Sample text */
+.font-sample-line {
+  color: #374151;
+  font-size: 18px;
+  font-style: italic;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border-radius: 6px;
+  border-left: 3px solid #94a3b8;
+}
+
+/* Line 4: Variations */
+.font-variations-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #475569;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 8px 0;
+}
+
+.font-variations-line:hover {
+  color: #1e40af;
+}
+
+.font-family-header {
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.font-family-name {
+  font-size: 1.25rem;
   font-weight: 700;
   color: #1a202c;
+  margin: 0 0 10px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.web-font-badge {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* Font Loading Badges */
+.font-loading-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  margin-left: 8px;
+  font-style: normal;
+}
+
+.font-loading-loading {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  color: white;
+  animation: pulse 2s infinite;
+}
+
+.font-loading-loaded {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+}
+
+.font-loading-error {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+}
+
+.font-loading-idle {
+  background: linear-gradient(135deg, #6b7280, #4b5563);
+  color: white;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* Parsing Confidence Badges */
+.parsing-confidence-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  margin-left: 8px;
+  font-style: normal;
+}
+
+.parsing-confidence-badge.confidence-high {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+}
+
+.parsing-confidence-badge.confidence-medium {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+}
+
+.parsing-confidence-badge.confidence-low {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+}
+
+/* Similar Font Badge */
+.similar-font-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  margin-left: 8px;
+  font-style: normal;
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  color: white;
+}
+
+/* Confidence Badge - REMOVED - No longer used in UI */
+
+/* Manual Load Button */
+.manual-load-btn {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 8px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  margin-left: 8px;
+  font-style: normal;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.manual-load-btn:hover {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  transform: translateY(-1px);
+}
+
+.manual-load-btn:active {
+  transform: translateY(0);
+}
+
+.font-usage-context {
+  color: #64748b;
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
+/* Usage Count Badge - REMOVED - No longer used in UI */
+
+/* Font Variations */
+.font-variations h6 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 15px 0;
+}
+
+.variations-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  transition: all 0.3s ease;
+  border: 1px solid #e2e8f0;
+}
+
+.variations-header:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.variations-header h6 {
+  margin: 0;
+  color: #374151;
+}
+
+.expand-icon {
+  font-size: 0.875rem;
+  color: #64748b;
+  font-weight: 600;
+  transition: transform 0.3s ease;
+}
+
+.variations-header:hover .expand-icon {
+  color: #374151;
+}
+
+.variations-table {
+  margin-top: 15px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.font-variations-table {
+  width: 100%;
+  border-collapse: collapse;
   font-size: 0.875rem;
 }
 
-.font-size, .font-weight, .font-element {
-  font-size: 0.75rem;
-  color: #64748b;
-  font-weight: 500;
+.font-variations-table th {
+  background: #f8fafc;
+  padding: 12px 8px;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 0.8rem;
+}
+
+.font-variations-table td {
+  padding: 10px 8px;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+.font-variations-table tr:hover {
+  background: #f8fafc;
+}
+
+.variation-sample {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .error, .no-fonts {
@@ -443,4 +665,147 @@
   .sample-text {
     max-width: 120px;
   }
+
+  .font-family-name {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .font-example {
+    padding: 15px;
+  }
+  
+  .variation-info {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .font-chip {
+    font-size: 0.8rem;
+    padding: 6px 12px;
+  }
+  
+  /* Mobile variations table adjustments */
+  .font-variations-table {
+    font-size: 0.75rem;
+  }
+  
+  .font-variations-table th,
+  .font-variations-table td {
+    padding: 8px 6px;
+  }
+  
+  .variation-sample {
+    max-width: 120px;
+  }
+  
+  .variations-header {
+    padding: 6px 10px;
+  }
+}
+
+/* Font Parsing Debug Information - REMOVED - Consolidated into font-info-summary */
+
+/* Font Info Summary - Clean consolidated layout */
+.font-info-summary {
+  margin-top: 12px;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.font-parsing-summary {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.parsing-info-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.parsing-label-inline {
+  color: #64748b;
+  font-weight: 600;
+  font-size: 0.8rem;
+  min-width: 70px;
+}
+
+.parsed-name-inline {
+  color: #1e40af;
+  font-weight: 600;
+  font-family: monospace;
+  font-size: 0.85rem;
+}
+
+.parsed-weight-inline {
+  color: #059669;
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+.similarity-info-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.similarity-label-inline {
+  color: #64748b;
+  font-weight: 600;
+  font-size: 0.8rem;
+  min-width: 70px;
+}
+
+.similarity-details-inline {
+  color: #7c3aed;
+  font-weight: 600;
+  font-family: monospace;
+  font-size: 0.85rem;
+}
+
+/* Clean font example styling */
+.font-example {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 20px;
+  transition: all 0.3s ease;
+  margin-top: 15px;
+}
+
+.font-example:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.font-test-text {
+  margin-bottom: 15px;
+  padding: 12px 15px;
+  background: #f1f5f9;
+  border-radius: 6px;
+  border-left: 3px solid #94a3b8;
+  text-align: left;
+  font-style: italic;
+  color: #475569;
+}
+
+.variation-info {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.variation-count, .usage-count {
+  background: #e2e8f0;
+  color: #374151;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
 }

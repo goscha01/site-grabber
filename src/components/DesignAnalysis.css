@@ -1,0 +1,115 @@
+/* Font Info Summary - Clean consolidated layout */
+.font-info-summary {
+  margin-top: 12px;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.font-parsing-summary {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.parsing-info-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.parsing-label-inline {
+  color: #64748b;
+  font-weight: 600;
+  font-size: 0.8rem;
+  min-width: 70px;
+}
+
+.parsed-name-inline {
+  color: #1e40af;
+  font-weight: 600;
+  font-family: monospace;
+  font-size: 0.85rem;
+}
+
+.parsed-weight-inline {
+  color: #059669;
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+.similarity-info-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.similarity-label-inline {
+  color: #64748b;
+  font-weight: 600;
+  font-size: 0.8rem;
+  min-width: 70px;
+}
+
+.similarity-details-inline {
+  color: #7c3aed;
+  font-weight: 600;
+  font-family: monospace;
+  font-size: 0.85rem;
+}
+
+/* Clean font example styling */
+.font-example {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 20px;
+  transition: all 0.3s ease;
+  margin-top: 15px;
+}
+
+.font-example:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.font-preview {
+  margin-bottom: 15px;
+  padding: 15px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border-left: 4px solid #667eea;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.font-test-text {
+  margin-bottom: 15px;
+  padding: 12px 15px;
+  background: #f1f5f9;
+  border-radius: 6px;
+  border-left: 3px solid #94a3b8;
+  text-align: left;
+  font-style: italic;
+  color: #475569;
+}
+
+.variation-info {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.variation-count, .usage-count {
+  background: #e2e8f0;
+  color: #374151;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
