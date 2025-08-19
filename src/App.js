@@ -13,37 +13,42 @@ function App() {
   const [url, setUrl] = useState('');
   const [screenshotResults, setScreenshotResults] = useState([]);
   const [isCapturing, setIsCapturing] = useState(false);
-  const [analysisData, setAnalysisData] = useState(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [error, setError] = useState(null);
   const [activeMode, setActiveMode] = useState('sync');
 
   const handleUrlSubmit = async (inputUrl) => {
-    setUrl(inputUrl);
     setIsCapturing(true);
-    setIsAnalyzing(true);
-
+    setError(null);
+    
     try {
-      const result = await captureWithScreenshotUrl(inputUrl);
-      setScreenshotResults([result]);
-      setAnalysisData(result.designAnalysis);
+      const result = await captureWithScreenshotUrl(inputUrl, {
+        captureMode: 'both',
+        mobileDevices: ['iPhone 12'],
+        captureFonts: true,
+        captureColors: true
+      });
+      
+      setScreenshotResults(prev => [...prev, result]);
+      setUrl(inputUrl);
     } catch (error) {
       console.error('Screenshot capture failed:', error);
+      setError('Failed to capture screenshot. Please try again.');
     } finally {
       setIsCapturing(false);
-      setIsAnalyzing(false);
     }
   };
 
-  const captureWithScreenshotUrl = async (inputUrl) => {
+  const captureWithScreenshotUrl = async (inputUrl, options = {}) => {
     try {
       console.log('Using Screenshot URL backend for:', inputUrl);
+      console.log('Capture options:', options);
       console.log('Current environment:', process.env.NODE_ENV);
       console.log('Current location:', window.location.href);
       
       // Dynamic API URL - use Railway URL in production, localhost in development
       const apiBaseUrl = process.env.NODE_ENV === 'production' 
         ? window.location.origin  // Use current domain (Railway URL)
-        : 'http://localhost:3001'; // Use localhost in development (match backend port)
+        : 'http://localhost:5000'; // Use localhost in development (match backend port)
       
       console.log('API Base URL:', apiBaseUrl);
       console.log('Full API endpoint:', `${apiBaseUrl}/api/screenshot`);
@@ -53,7 +58,11 @@ function App() {
         url: inputUrl,
         width: 1200,
         height: 800,
-        fullPage: true // Always capture full page
+        fullPage: true, // Always capture full page
+        captureMode: options.captureMode || 'both',
+        mobileDevices: options.mobileDevices || ['iPhone 12', 'Samsung Galaxy S21'],
+        captureFonts: true,
+        captureColors: true
       };
       console.log('Request body:', requestBody);
       
@@ -76,14 +85,31 @@ function App() {
         throw new Error(responseData.error || 'Screenshot capture failed');
       }
       
-      const dataUrl = `data:image/png;base64,${responseData.screenshot}`;
+      const desktopDataUrl = `data:image/png;base64,${responseData.screenshots.desktop}`;
+      
+      // Handle multiple mobile devices
+      const mobileScreenshots = responseData.screenshots.mobile.map(device => ({
+        device: device.device,
+        dataUrl: `data:image/png;base64,${device.screenshot}`,
+        width: device.viewport.width,
+        height: device.viewport.height,
+        userAgent: device.userAgent
+      }));
       
       return {
+        url: inputUrl,
         method: 'Screenshot URL',
-        imageData: dataUrl,
-        width: 1200,
-        height: 800,
-        designAnalysis: responseData.designAnalysis
+        screenshots: {
+          desktop: {
+            dataUrl: desktopDataUrl,
+            width: 1200,
+            height: 800
+          },
+          mobile: mobileScreenshots
+        },
+        designAnalysis: responseData.designAnalysis,
+        captureMode: responseData.captureMode,
+        mobileDevices: responseData.mobileDevices
       };
       
     } catch (error) {
@@ -122,11 +148,12 @@ function App() {
           {activeMode === 'sync' ? (
             <>
               <UrlInput onSubmit={handleUrlSubmit} isCapturing={isCapturing} />
-              <ScreenshotResults results={screenshotResults} url={url} />
-              <DesignAnalysisPanel 
-                analysisData={analysisData}
-                isLoading={isAnalyzing}
-              />
+              {error && (
+                <div className="error-message" style={{ color: '#dc3545', textAlign: 'center', marginBottom: '1rem' }}>
+                  {error}
+                </div>
+              )}
+              <ScreenshotResults results={screenshotResults} />
             </>
           ) : (
             <AsyncScreenshotCapture />

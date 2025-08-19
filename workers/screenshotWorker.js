@@ -1,5 +1,39 @@
 const puppeteer = require('puppeteer');
 
+// Device presets for mobile emulation
+const DEVICE_PRESETS = {
+  'iPhone 12': {
+    name: 'iPhone 12',
+    userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.3 Mobile/15E148 Safari/604.1',
+    viewport: { width: 390, height: 844, deviceScaleFactor: 3, isMobile: true, hasTouch: true },
+    devicePixelRatio: 3
+  },
+  'iPhone 12 Pro': {
+    name: 'iPhone 12 Pro',
+    userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.3 Mobile/15E148 Safari/604.1',
+    viewport: { width: 390, height: 844, deviceScaleFactor: 3, isMobile: true, hasTouch: true },
+    devicePixelRatio: 3
+  },
+  'Samsung Galaxy S21': {
+    name: 'Samsung Galaxy S21',
+    userAgent: 'Mozilla/5.0 (Linux; Android 11; SM-G991B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36',
+    viewport: { width: 360, height: 800, deviceScaleFactor: 3, isMobile: true, hasTouch: true },
+    devicePixelRatio: 3
+  },
+  'iPad Pro': {
+    name: 'iPad Pro',
+    userAgent: 'Mozilla/5.0 (iPad; CPU OS 14_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.3 Mobile/15E148 Safari/604.1',
+    viewport: { width: 1024, height: 1366, deviceScaleFactor: 2, isMobile: false, hasTouch: true },
+    devicePixelRatio: 2
+  },
+  'Google Pixel 5': {
+    name: 'Google Pixel 5',
+    userAgent: 'Mozilla/5.0 (Linux; Android 11; Pixel 5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36',
+    viewport: { width: 393, height: 851, deviceScaleFactor: 2.75, isMobile: true, hasTouch: true },
+    devicePixelRatio: 2.75
+  }
+};
+
 const captureAndAnalyze = async (job) => {
   const { url, options } = job.data;
   let browser = null;
@@ -7,6 +41,7 @@ const captureAndAnalyze = async (job) => {
   try {
     job.progress(5);
     console.log(`📸 Starting capture for: ${url}`);
+    console.log(`📱 Capture mode: ${options.captureMode || 'both'}`);
     
     // Launch Puppeteer
     browser = await puppeteer.launch({
@@ -29,8 +64,7 @@ const captureAndAnalyze = async (job) => {
         '--disable-backgrounding-occluded-windows',
         '--disable-renderer-backgrounding',
         '--disable-features=TranslateUI',
-        '--disable-ipc-flooding-protection',
-        '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        '--disable-ipc-flooding-protection'
       ]
     });
     
@@ -38,12 +72,19 @@ const captureAndAnalyze = async (job) => {
     
     const page = await browser.newPage();
     
-    // Set realistic user agent and viewport
-    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
-    await page.setViewport({ 
+    // Set default desktop viewport and user agent
+    const defaultDesktopViewport = { 
       width: options.width || 1920, 
-      height: options.height || 1080 
-    });
+      height: options.height || 1080,
+      deviceScaleFactor: 1,
+      isMobile: false,
+      hasTouch: false
+    };
+    
+    const defaultDesktopUserAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+    
+    await page.setViewport(defaultDesktopViewport);
+    await page.setUserAgent(defaultDesktopUserAgent);
     
     // Set additional headers to look more human
     await page.setExtraHTTPHeaders({
@@ -101,78 +142,66 @@ const captureAndAnalyze = async (job) => {
                  !bodyText.includes('cloudflare') &&
                  !bodyText.includes('captcha');
         }, { timeout: 30000 });
-        console.log(`✅ Cloudflare challenge completed`);
-      } catch (waitError) {
-        console.log(`⚠️  Still waiting for challenge, proceeding anyway...`);
+      } catch (error) {
+        console.log(`⚠️  Cloudflare challenge may still be active, proceeding anyway...`);
       }
-    }
-    
-    // Wait for network to be idle
-    try {
-      await page.waitForFunction(() => {
-        return document.readyState === 'complete';
-      }, { timeout: 10000 });
-      console.log(`✅ Page fully loaded`);
-    } catch (readyError) {
-      console.log(`⚠️  Page ready state timeout, proceeding...`);
     }
     
     job.progress(40);
     
+    // Wait for page to be fully loaded
+    try {
+      await page.waitForLoadState('networkidle', { timeout: 10000 });
+    } catch (error) {
+      console.log(`⚠️  Network idle timeout, proceeding anyway...`);
+    }
+    
     // Extract fonts if requested
-    let fonts = null;
+    let desktopFonts = null;
     if (options.captureFonts) {
-      console.log(`🔤 Extracting fonts...`);
-      fonts = await page.evaluate(() => {
+      console.log(`🔤 Analyzing desktop fonts...`);
+      desktopFonts = await page.evaluate(() => {
         const fontSet = new Set();
         const fontDetails = [];
-        const elements = document.querySelectorAll('h1, h2, h3, h4, h5, h6, p, span, div, a');
         
+        const elements = document.querySelectorAll('*');
         elements.forEach(el => {
           const style = window.getComputedStyle(el);
           const fontFamily = style.fontFamily;
-          const textContent = el.textContent?.trim();
           
-          if (fontFamily && textContent && textContent.length > 0) {
-            const primaryFont = fontFamily.split(',')[0].trim().replace(/['"]/g, '');
-            
-            if (!['serif', 'sans-serif', 'monospace', 'cursive', 'fantasy'].includes(primaryFont.toLowerCase())) {
-              fontSet.add(primaryFont);
-              
-              if (['H1', 'H2', 'H3', 'H4', 'H5', 'H6'].includes(el.tagName)) {
-                fontDetails.push({
-                  fontFamily: primaryFont,
-                  fontSize: style.fontSize,
-                  fontWeight: style.fontWeight,
-                  element: el.tagName.toLowerCase(),
-                  sampleText: textContent.substring(0, 50)
-                });
-              }
-            }
+          if (fontFamily && fontFamily !== 'initial' && fontFamily !== 'inherit') {
+            fontSet.add(fontFamily);
+            fontDetails.push({
+              family: fontFamily,
+              element: el.tagName.toLowerCase(),
+              fontSize: style.fontSize,
+              fontWeight: style.fontWeight,
+              fontStyle: style.fontStyle,
+              sampleText: el.textContent?.trim().substring(0, 50) || ''
+            });
           }
         });
         
         return {
-          unique: Array.from(fontSet),
-          detailed: fontDetails.slice(0, 15),
+          uniqueFonts: Array.from(fontSet),
+          detailed: fontDetails,
           totalCount: fontSet.size
         };
       });
     }
     
-    job.progress(60);
+    job.progress(50);
     
-    // Take screenshot
-    console.log(`📷 Capturing screenshot...`);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    const screenshotOptions = {
+    // Capture desktop screenshot
+    console.log(`🖥️ Capturing desktop screenshot...`);
+    const desktopScreenshotOptions = {
       type: 'png',
       fullPage: options.fullPage || false,
+      quality: 90
     };
     
     if (!options.fullPage) {
-      screenshotOptions.clip = { 
+      desktopScreenshotOptions.clip = { 
         x: 0, 
         y: 0, 
         width: options.width || 1920, 
@@ -180,15 +209,159 @@ const captureAndAnalyze = async (job) => {
       };
     }
     
-    const screenshot = await page.screenshot(screenshotOptions);
+    const desktopScreenshot = await page.screenshot(desktopScreenshotOptions);
+    
+    // Initialize mobile screenshots array
+    const mobileScreenshots = [];
+    const mobileFonts = [];
+    const mobileColors = [];
+    
+    // Capture mobile screenshots if requested
+    if (options.captureMode === 'mobile' || options.captureMode === 'both') {
+      console.log(`📱 Capturing mobile screenshots...`);
+      
+      // Get selected device or use default mobile devices
+      const selectedDevices = options.mobileDevices || ['iPhone 12', 'Samsung Galaxy S21'];
+      
+      for (const deviceKey of selectedDevices) {
+        const device = DEVICE_PRESETS[deviceKey];
+        if (!device) {
+          console.log(`⚠️  Unknown device: ${deviceKey}, skipping...`);
+          continue;
+        }
+        
+        console.log(`📱 Emulating ${device.name}...`);
+        
+        // Emulate the device
+        await page.emulate(device);
+        
+        // Wait for mobile layout to adjust
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        
+        // Check for mobile-specific redirects
+        const currentUrl = page.url();
+        if (currentUrl !== url) {
+          console.log(`🔄 Mobile redirect detected: ${currentUrl}`);
+        }
+        
+        // Wait for mobile-specific elements to load
+        try {
+          await page.waitForFunction(() => {
+            return document.readyState === 'complete';
+          }, { timeout: 10000 });
+        } catch (error) {
+          console.log(`⚠️  Mobile page load timeout for ${device.name}, proceeding...`);
+        }
+        
+        // Capture mobile screenshot
+        const mobileScreenshotOptions = {
+          type: 'png',
+          fullPage: options.fullPage || false,
+          quality: 90
+        };
+        
+        if (!options.fullPage) {
+          mobileScreenshotOptions.clip = { 
+            x: 0, 
+            y: 0, 
+            width: device.viewport.width, 
+            height: device.viewport.height 
+          };
+        }
+        
+        const mobileScreenshot = await page.screenshot(mobileScreenshotOptions);
+        
+        // Extract mobile fonts if requested
+        let deviceFonts = null;
+        if (options.captureFonts) {
+          console.log(`🔤 Analyzing fonts for ${device.name}...`);
+          deviceFonts = await page.evaluate(() => {
+            const fontSet = new Set();
+            const fontDetails = [];
+            
+            const elements = document.querySelectorAll('*');
+            elements.forEach(el => {
+              const style = window.getComputedStyle(el);
+              const fontFamily = style.fontFamily;
+              
+              if (fontFamily && fontFamily !== 'initial' && fontFamily !== 'inherit') {
+                fontSet.add(fontFamily);
+                fontDetails.push({
+                  family: fontFamily,
+                  element: el.tagName.toLowerCase(),
+                  fontSize: style.fontSize,
+                  fontWeight: style.fontWeight,
+                  fontStyle: style.fontStyle,
+                  sampleText: el.textContent?.trim().substring(0, 50) || ''
+                });
+              }
+            });
+            
+            return {
+              uniqueFonts: Array.from(fontSet),
+              detailed: fontDetails,
+              totalCount: fontSet.size
+            };
+          });
+        }
+        
+        // Extract mobile colors if requested
+        let deviceColors = null;
+        if (options.captureColors) {
+          console.log(`🎨 Analyzing colors for ${device.name}...`);
+          deviceColors = await page.evaluate(() => {
+            const colorSet = new Set();
+            const colorDetails = [];
+            
+            const elements = document.querySelectorAll('*');
+            elements.forEach(el => {
+              const style = window.getComputedStyle(el);
+              const properties = ['color', 'backgroundColor', 'borderColor'];
+              
+              properties.forEach(prop => {
+                const value = style[prop];
+                if (value && value !== 'transparent' && value !== 'rgba(0, 0, 0, 0)' && value !== 'initial' && value !== 'inherit') {
+                  colorSet.add(value);
+                  colorDetails.push({
+                    color: value,
+                    element: el.tagName.toLowerCase(),
+                    property: prop,
+                    sampleText: el.textContent?.trim().substring(0, 30) || ''
+                  });
+                }
+              });
+            });
+            
+            return {
+              dominantColors: Array.from(colorSet).slice(0, 8),
+              detailed: colorDetails.slice(0, 20),
+              totalCount: colorSet.size
+            };
+          });
+        }
+        
+        mobileScreenshots.push({
+          device: device.name,
+          screenshot: mobileScreenshot.toString('base64'),
+          viewport: device.viewport,
+          userAgent: device.userAgent,
+          devicePixelRatio: device.devicePixelRatio,
+          fonts: deviceFonts,
+          colors: deviceColors
+        });
+        
+        mobileFonts.push(deviceFonts);
+        mobileColors.push(deviceColors);
+      }
+    }
     
     job.progress(80);
     
-    // Extract colors if requested (CSS-based approach)
-    let colors = null;
+    // Extract desktop colors if requested
+    let desktopColors = null;
     if (options.captureColors) {
-      console.log(`🎨 Analyzing colors...`);
-      colors = await page.evaluate(() => {
+      console.log(`🎨 Analyzing desktop colors...`);
+      desktopColors = await page.evaluate(() => {
         const colorSet = new Set();
         const colorDetails = [];
         
@@ -227,24 +400,39 @@ const captureAndAnalyze = async (job) => {
         title: document.title,
         description: document.querySelector('meta[name="description"]')?.content || '',
         favicon: document.querySelector('link[rel*="icon"]')?.href || '',
-        viewport: document.querySelector('meta[name="viewport"]')?.content || ''
+        viewport: document.querySelector('meta[name="viewport"]')?.content || '',
+        mobileOptimized: document.querySelector('meta[name="MobileOptimized"]')?.content || '',
+        handheldFriendly: document.querySelector('meta[name="HandheldFriendly"]')?.content || ''
       };
     });
     
     const result = {
       success: true,
       url,
-      screenshot: {
-        base64: screenshot.toString('base64'),
-        format: 'png',
-        size: {
-          width: options.width || 1920,
-          height: options.fullPage ? 'auto' : (options.height || 1080)
-        }
+      captureMode: options.captureMode || 'both',
+      screenshots: {
+        desktop: {
+          base64: desktopScreenshot.toString('base64'),
+          format: 'png',
+          size: {
+            width: options.width || 1920,
+            height: options.fullPage ? 'auto' : (options.height || 1080)
+          },
+          viewport: defaultDesktopViewport,
+          userAgent: defaultDesktopUserAgent
+        },
+        mobile: mobileScreenshots
       },
       analysis: {
-        colors: colors,
-        fonts: fonts,
+        desktop: {
+          colors: desktopColors,
+          fonts: desktopFonts
+        },
+        mobile: mobileScreenshots.map((device, index) => ({
+          device: device.device,
+          colors: device.colors,
+          fonts: device.fonts
+        })),
         metadata: metadata,
         timestamp: new Date().toISOString(),
         processingTime: Date.now() - job.timestamp
@@ -267,4 +455,4 @@ const captureAndAnalyze = async (job) => {
   }
 };
 
-module.exports = { captureAndAnalyze };
+module.exports = { captureAndAnalyze, DEVICE_PRESETS };

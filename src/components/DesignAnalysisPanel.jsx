@@ -258,18 +258,17 @@ const buildGoogleFontsUrl = (parsedFont) => {
   return `https://fonts.googleapis.com/css2?family=${family}:wght@${uniqueWeights.join(';')}&display=swap`;
 };
 
-const DesignAnalysisPanel = ({ analysisData, isLoading }) => {
+const DesignAnalysisPanel = ({ analysis }) => {
   const [activeTab, setActiveTab] = useState('colors');
+  const [loadedFonts, setLoadedFonts] = useState(new Set());
+  const [fontLoadingStates, setFontLoadingStates] = useState({});
+  const [expandedFonts, setExpandedFonts] = useState(new Set());
+
+  console.log('DesignAnalysisPanel - analysis prop:', analysis); // Debug log
+  console.log('DesignAnalysisPanel - analysis type:', typeof analysis); // Debug log
+  console.log('DesignAnalysisPanel - analysis keys:', analysis ? Object.keys(analysis) : 'null'); // Debug log
   
-  if (isLoading) {
-    return (
-      <div className="design-analysis-panel">
-        <div className="loading">🎨 Analyzing website design...</div>
-      </div>
-    );
-  }
-  
-  if (!analysisData) {
+  if (!analysis) {
     return (
       <div className="design-analysis-panel">
         <div className="empty">✨ Design analysis will appear here after capturing a screenshot</div>
@@ -277,7 +276,7 @@ const DesignAnalysisPanel = ({ analysisData, isLoading }) => {
     );
   }
   
-  const { colors, fonts } = analysisData;
+  const { colors, fonts } = analysis;
   
   return (
     <div className="design-analysis-panel">

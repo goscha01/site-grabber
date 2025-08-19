@@ -624,7 +624,16 @@ app.get('/api/queue/stats', async (req, res) => {
 
 // Screenshot endpoint (existing functionality - keep for backwards compatibility)
 app.post('/api/screenshot', async (req, res) => {
-  const { url, width = 1200, height = 800, fullPage = false } = req.body;
+  const { 
+    url, 
+    width = 1200, 
+    height = 800, 
+    fullPage = false,
+    captureMode = 'both',
+    mobileDevices = ['iPhone 12', 'Samsung Galaxy S21'],
+    captureFonts = true,
+    captureColors = true
+  } = req.body;
   
   if (!url) {
     return res.status(400).json({ error: 'URL is required' });
@@ -736,13 +745,78 @@ app.post('/api/screenshot', async (req, res) => {
       console.log(`⚠️  Page ready state timeout, proceeding...`);
     }
     
-    console.log(`📷 Taking screenshot...`);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    const screenshot = await page.screenshot({
+    // Capture desktop screenshot
+    console.log(`📱 Capturing desktop screenshot...`);
+    const desktopScreenshot = await page.screenshot({
       type: 'png',
       fullPage: fullPage
     });
+    
+    // Initialize mobile screenshots array
+    const mobileScreenshots = [];
+    
+    // Capture mobile screenshots if requested
+    if (captureMode === 'mobile' || captureMode === 'both') {
+      console.log(`📱 Capturing mobile screenshots...`);
+      
+      // Device presets for mobile emulation
+      const DEVICE_PRESETS = {
+        'iPhone 12': {
+          name: 'iPhone 12',
+          userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.3 Mobile/15E148 Safari/604.1',
+          viewport: { width: 390, height: 844, deviceScaleFactor: 3, isMobile: true, hasTouch: true }
+        },
+        'Samsung Galaxy S21': {
+          name: 'Samsung Galaxy S21',
+          userAgent: 'Mozilla/5.0 (Linux; Android 11; SM-G991B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36',
+          viewport: { width: 360, height: 800, deviceScaleFactor: 3, isMobile: true, hasTouch: true }
+        }
+      };
+      
+      for (const deviceKey of mobileDevices) {
+        const device = DEVICE_PRESETS[deviceKey];
+        if (!device) {
+          console.log(`⚠️  Unknown device: ${deviceKey}, skipping...`);
+          continue;
+        }
+        
+        console.log(`📱 Emulating ${device.name}...`);
+        
+        // Emulate the device
+        await page.emulate(device);
+        
+        // Wait for mobile layout to adjust
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        
+        // Check for mobile-specific redirects
+        const currentUrl = page.url();
+        if (currentUrl !== url) {
+          console.log(`🔄 Mobile redirect detected: ${currentUrl}`);
+        }
+        
+        // Wait for mobile-specific elements to load
+        try {
+          await page.waitForFunction(() => {
+            return document.readyState === 'complete';
+          }, { timeout: 10000 });
+        } catch (error) {
+          console.log(`⚠️  Mobile page load timeout for ${device.name}, proceeding...`);
+        }
+        
+        // Capture mobile screenshot
+        const mobileScreenshot = await page.screenshot({
+          type: 'png',
+          fullPage: fullPage
+        });
+        
+        mobileScreenshots.push({
+          device: device.name,
+          screenshot: mobileScreenshot.toString('base64'),
+          viewport: device.viewport,
+          userAgent: device.userAgent
+        });
+      }
+    }
     
     // Complete design analysis before sending response
     console.log(`🎨 Starting design analysis for: ${url}`);
@@ -750,7 +824,7 @@ app.post('/api/screenshot', async (req, res) => {
     try {
       const result = await analyzeSiteDesign(url, page); // Pass page
       if (result.success) {
-        designAnalysis = result.analysis;
+        designAnalysis = result.analysis; // This is correct - result.analysis contains {colors, fonts, timestamp}
         analysisResults.set(url, result);
         console.log(`✅ Design analysis completed for: ${url}`);
       }
@@ -758,15 +832,20 @@ app.post('/api/screenshot', async (req, res) => {
       console.error('❌ Design analysis failed:', err);
     }
     
-    // Convert screenshot to base64 for JSON response
-    const base64Screenshot = screenshot.toString('base64');
+    // Convert screenshots to base64 for JSON response
+    const base64DesktopScreenshot = desktopScreenshot.toString('base64');
     
     res.json({
       success: true,
-      screenshot: base64Screenshot,
+      screenshots: {
+        desktop: base64DesktopScreenshot,
+        mobile: mobileScreenshots
+      },
       url: url,
       timestamp: new Date().toISOString(),
-      designAnalysis: designAnalysis
+      designAnalysis: designAnalysis,
+      captureMode: captureMode,
+      mobileDevices: mobileDevices
     });
     
     console.log(`✅ Screenshot captured successfully for: ${url}`);
