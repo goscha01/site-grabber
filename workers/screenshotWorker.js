@@ -5,19 +5,19 @@ const DEVICE_PRESETS = {
   'iPhone 12': {
     name: 'iPhone 12',
     userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.3 Mobile/15E148 Safari/604.1',
-    viewport: { width: 390, height: 844, deviceScaleFactor: 3, isMobile: true, hasTouch: true },
+    viewport: { width: 375, height: 1080, deviceScaleFactor: 3, isMobile: true, hasTouch: true },
     devicePixelRatio: 3
   },
   'iPhone 12 Pro': {
     name: 'iPhone 12 Pro',
     userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.3 Mobile/15E148 Safari/604.1',
-    viewport: { width: 390, height: 844, deviceScaleFactor: 3, isMobile: true, hasTouch: true },
+    viewport: { width: 375, height: 1080, deviceScaleFactor: 3, isMobile: true, hasTouch: true },
     devicePixelRatio: 3
   },
   'Samsung Galaxy S21': {
     name: 'Samsung Galaxy S21',
     userAgent: 'Mozilla/5.0 (Linux; Android 11; SM-G991B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36',
-    viewport: { width: 360, height: 800, deviceScaleFactor: 3, isMobile: true, hasTouch: true },
+    viewport: { width: 360, height: 1080, deviceScaleFactor: 3, isMobile: true, hasTouch: true },
     devicePixelRatio: 3
   },
   'iPad Pro': {

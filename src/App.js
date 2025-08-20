@@ -8,6 +8,7 @@ import DesignAnalysisPanel from './components/DesignAnalysisPanel';
 import AsyncScreenshotCapture from './components/AsyncScreenshotCapture';
 import Navigation from './components/Navigation';
 import ContentSections from './components/ContentSections';
+import ProgressBar from './components/ProgressBar';
 
 function App() {
   const [url, setUrl] = useState('');
@@ -15,12 +16,54 @@ function App() {
   const [isCapturing, setIsCapturing] = useState(false);
   const [error, setError] = useState(null);
   const [activeMode, setActiveMode] = useState('sync');
+  const [currentStage, setCurrentStage] = useState('init');
+  
+  // Define the stages of the analysis process
+  const analysisStages = [
+    {
+      key: 'init',
+      title: 'Initializing',
+      description: 'Preparing to capture website screenshot...'
+    },
+    {
+      key: 'capture',
+      title: 'Capturing Screenshots',
+      description: 'Taking desktop and mobile screenshots of the website...'
+    },
+    {
+      key: 'desktop_pixels',
+      title: 'Analyzing Desktop Pixels',
+      description: 'Processing desktop screenshot pixels for color analysis...'
+    },
+    {
+      key: 'mobile_pixels',
+      title: 'Analyzing Mobile Pixels',
+      description: 'Processing mobile screenshot pixels for color analysis...'
+    },
+    {
+      key: 'css_analysis',
+      title: 'CSS Analysis',
+      description: 'Extracting colors, fonts, and design elements from CSS...'
+    },
+    {
+      key: 'color_filtering',
+      title: 'Color Filtering',
+      description: 'Filtering and analyzing color usage patterns...'
+    },
+    {
+      key: 'complete',
+      title: 'Analysis Complete',
+      description: 'Design analysis finished, displaying results...'
+    }
+  ];
 
   const handleUrlSubmit = async (inputUrl) => {
     setIsCapturing(true);
     setError(null);
+    setCurrentStage('init');
     
     try {
+      setCurrentStage('capture');
       const result = await captureWithScreenshotUrl(inputUrl, {
         captureMode: 'both',
         mobileDevices: ['iPhone 12'],
@@ -28,6 +71,7 @@ function App() {
         captureColors: true
       });
       
+      setCurrentStage('complete');
       setScreenshotResults(prev => [...prev, result]);
       setUrl(inputUrl);
     } catch (error) {
@@ -35,6 +79,7 @@ function App() {
       setError('Failed to capture screenshot. Please try again.');
     } finally {
       setIsCapturing(false);
+      setCurrentStage('init');
     }
   };
 
@@ -65,6 +110,19 @@ function App() {
         captureColors: true
       };
       console.log('Request body:', requestBody);
+      
+      // Simulate progress stages during the API call
+      setCurrentStage('desktop_pixels');
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate desktop pixel analysis
+      
+      setCurrentStage('mobile_pixels');
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate mobile pixel analysis
+      
+      setCurrentStage('css_analysis');
+      await new Promise(resolve => setTimeout(resolve, 800)); // Simulate CSS analysis
+      
+      setCurrentStage('color_filtering');
+      await new Promise(resolve => setTimeout(resolve, 600)); // Simulate color filtering
       
       const response = await fetch(`${apiBaseUrl}/api/screenshot`, {
         method: 'POST',
@@ -160,9 +218,17 @@ function App() {
         </header>
 
         <main className="app-main">
-          {activeMode === 'sync' ? (
-            <>
-              <UrlInput onSubmit={handleUrlSubmit} isCapturing={isCapturing} />
+                                {activeMode === 'sync' ? (
+                        <>
+                          <UrlInput onSubmit={handleUrlSubmit} isCapturing={isCapturing} currentUrl={url} />
+              
+              {/* Progress Bar - only show when capturing and no results yet */}
+              <ProgressBar 
+                currentStage={currentStage}
+                stages={analysisStages}
+                isVisible={isCapturing && screenshotResults.length === 0}
+              />
+              
               {error && (
                 <div className="error-message" style={{ color: '#dc3545', textAlign: 'center', marginBottom: '1rem' }}>
                   {error}

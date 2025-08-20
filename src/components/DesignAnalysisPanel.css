@@ -9,7 +9,6 @@
 .panel-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   margin-bottom: 30px;
   padding-bottom: 20px;
   border-bottom: 1px solid #e2e8f0;
@@ -26,38 +25,22 @@
   background-clip: text;
 }
 
-.tab-buttons {
-  display: flex;
-  gap: 12px;
-}
 
-.tab-button {
-  padding: 10px 20px;
-  border: 2px solid #e2e8f0;
-  background: white;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 0.875rem;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  color: #64748b;
-}
-
-.tab-button.active {
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: white;
-  border-color: #667eea;
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-}
-
-.tab-button:hover:not(.active) {
-  background: #f8fafc;
-  border-color: #667eea;
-  transform: translateY(-1px);
-}
 
 .tab-content {
   margin-top: 30px;
+}
+
+.analysis-content {
+  margin-top: 30px;
+}
+
+.analysis-content > * {
+  margin-bottom: 2rem;
+}
+
+.analysis-content > *:last-child {
+  margin-bottom: 0;
 }
 
 .color-palette {
@@ -237,6 +220,45 @@
   text-align: center;
 }
 
+/* Color Table Header - Clickable to expand/collapse */
+.color-table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  cursor: pointer;
+  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  transition: all 0.3s ease;
+  font-weight: 600;
+  color: #374151;
+}
+
+.color-table-header:hover {
+  background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+  border-color: #667eea;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.color-table-header span:first-child {
+  font-size: 1rem;
+}
+
+.expand-icon {
+  font-size: 1.2rem;
+  color: #64748b;
+  font-weight: 600;
+  transition: transform 0.3s ease;
+  flex-shrink: 0;
+}
+
+.color-table-header:hover .expand-icon {
+  color: #374151;
+}
+
 /* Color Table Styles */
 .color-table-container {
   overflow-x: auto;
@@ -357,6 +379,29 @@
   text-align: center;
 }
 
+/* Font Names Container - Integrated into summary */
+.font-names-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.font-name-item {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.font-name-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  border-color: #667eea;
+}
+
 .font-chips {
   display: flex;
   flex-wrap: wrap;
@@ -405,7 +450,19 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
-/* Line 1: Font name with badges */
+/* Font name reference in details (smaller, since main name is in summary) */
+.font-name-reference {
+  margin-bottom: 8px;
+}
+
+.font-name-reference .font-name {
+  color: #64748b;
+  font-size: 1rem;
+  font-weight: 500;
+  opacity: 0.8;
+}
+
+/* Line 1: Font name with badges (keeping for backward compatibility) */
 .font-name-line {
   display: flex;
   align-items: center;
@@ -420,6 +477,30 @@
   font-weight: 600;
 }
 
+/* Font Name Display */
+.font-name-display {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.font-name-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 0 0 0.5rem 0;
+  font-family: inherit;
+}
+
+.font-name-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
 /* Line 2: Usage context */
 .font-usage-line {
   color: #64748b;
@@ -431,7 +512,7 @@
 .font-sample-line {
   color: #374151;
   font-size: 18px;
-  font-style: italic;
+  font-style: normal;
   margin-bottom: 12px;
   padding: 8px 12px;
   background: #f8fafc;
@@ -586,7 +667,7 @@
 .font-usage-context {
   color: #64748b;
   font-size: 0.875rem;
-  font-style: italic;
+  font-style: normal;
 }
 
 /* Usage Count Badge - REMOVED - No longer used in UI */
@@ -679,7 +760,7 @@
   text-align: center;
   padding: 60px;
   color: #64748b;
-  font-style: italic;
+  font-style: normal;
   font-size: 1.1rem;
 }
 
@@ -861,7 +942,7 @@
   border-radius: 6px;
   border-left: 3px solid #94a3b8;
   text-align: left;
-  font-style: italic;
+  font-style: normal;
   color: #475569;
 }
 

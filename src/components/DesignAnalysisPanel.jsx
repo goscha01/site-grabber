@@ -259,7 +259,6 @@ const buildGoogleFontsUrl = (parsedFont) => {
 };
 
 const DesignAnalysisPanel = ({ analysis }) => {
-  const [activeTab, setActiveTab] = useState('colors');
   const [loadedFonts, setLoadedFonts] = useState(new Set());
   const [fontLoadingStates, setFontLoadingStates] = useState({});
   const [expandedFonts, setExpandedFonts] = useState(new Set());
@@ -282,35 +281,30 @@ const DesignAnalysisPanel = ({ analysis }) => {
     <div className="design-analysis-panel">
       <div className="panel-header">
         <h2 className="panel-title">Design Analysis</h2>
-        <div className="tab-buttons">
-          <button 
-            className={`tab-button ${activeTab === 'colors' ? 'active' : ''}`}
-            onClick={() => setActiveTab('colors')}
-          >
-            🎨 Colors ({colors?.dominantColors?.length || 0})
-          </button>
-          <button 
-            className={`tab-button ${activeTab === 'fonts' ? 'active' : ''}`}
-            onClick={() => setActiveTab('fonts')}
-          >
-            🔤 Fonts ({fonts?.totalCount || 0})
-          </button>
-        </div>
       </div>
       
-      <div className="tab-content">
-        {activeTab === 'colors' && (
-          <ColorPalette colors={colors} />
-        )}
-        {activeTab === 'fonts' && (
-          <FontList fonts={fonts} />
-        )}
+      <div className="analysis-content">
+        <ColorPalette colors={colors} />
+        <FontList fonts={fonts} />
       </div>
     </div>
   );
 };
 
 const ColorPalette = ({ colors }) => {
+  const [expandedColors, setExpandedColors] = useState(new Set());
+
+  // Toggle color expansion
+  const toggleColorExpansion = (colorIndex) => {
+    const newExpanded = new Set(expandedColors);
+    if (newExpanded.has(colorIndex)) {
+      newExpanded.delete(colorIndex);
+    } else {
+      newExpanded.add(colorIndex);
+    }
+    setExpandedColors(newExpanded);
+  };
+
   if (!colors || colors.error) {
     return <div className="error">Failed to extract colors</div>;
   }
@@ -493,32 +487,7 @@ const ColorPalette = ({ colors }) => {
   
   return (
     <div className="color-palette">
-      {/* Summary Section */}
-      <div className="color-section summary-section">
-        <h4>📊 Color Analysis Summary</h4>
-        <div className="summary-grid">
-          <div className="summary-item">
-            <span className="summary-label">Total CSS Colors Found:</span>
-            <span className="summary-value">{summaryInfo.totalColors}</span>
-          </div>
-          <div className="summary-item">
-            <span className="summary-label">Colors Kept:</span>
-            <span className="summary-value">{summaryInfo.colorsKept}</span>
-          </div>
-          <div className="summary-item">
-            <span className="summary-label">Pure Black/White Filtered:</span>
-            <span className="summary-value">{summaryInfo.pureBlackAndWhiteFiltered}</span>
-          </div>
-          <div className="summary-item">
-            <span className="summary-label">No Pixel Data Filtered:</span>
-            <span className="summary-value">{summaryInfo.noPixelDataFiltered}</span>
-          </div>
-          <div className="summary-item">
-            <span className="summary-label">Dominant Colors:</span>
-            <span className="summary-value">{summaryInfo.dominantColors}</span>
-          </div>
-        </div>
-      </div>
+
       
       {/* Dominant Colors Section */}
       <div className="color-section dominant-section">
@@ -547,7 +516,6 @@ const ColorPalette = ({ colors }) => {
       {/* Color Usage Details */}
       <div className="color-details">
         <h4>📊 Color Usage Details</h4>
-        <p className="section-description">Only colors with actual pixel data (no 0% values) - excluding pure black/white</p>
         
         {/* Debug logging for details table */}
         {console.log('🔍 Details table - colorsWithPixelData:', {
@@ -555,47 +523,58 @@ const ColorPalette = ({ colors }) => {
           colors: colorsWithPixelData.map(c => c.color)
         })}
         
-        <div className="color-table-container">
-          <table className="color-table">
-            <thead>
-              <tr>
-                <th>Color</th>
-                <th>Element</th>
-                <th>Property</th>
-                <th>Desktop %</th>
-                <th>Mobile %</th>
-                <th>Sample Text</th>
-              </tr>
-            </thead>
-            <tbody>
-              {colorsWithPixelData.map((colorData, index) => {
-                return (
-                  <tr key={index} className="color-table-row">
-                    <td>
-                      <div className="color-table-preview">
-                        <div 
-                          className="color-table-swatch" 
-                          style={{ backgroundColor: colorData.color }}
-                          title={colorData.color}
-                        ></div>
-                        <span className="color-table-hex">{colorData.color}</span>
-                      </div>
-                    </td>
-                    <td>{colorData.element}</td>
-                    <td>{colorData.property}</td>
-                    <td className="pixel-percentage">
-                      {colorData.desktopPercentage}%
-                    </td>
-                    <td className="pixel-percentage">
-                      {colorData.mobilePercentage}%
-                    </td>
-                    <td className="sample-text">{colorData.sampleText}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        {/* Clickable header to expand/collapse the entire table */}
+        <div className="color-table-header" onClick={() => toggleColorExpansion('all')}>
+          <span>View Color Details ({colorsWithPixelData.length} colors)</span>
+          <span className="expand-icon">
+            {expandedColors.has('all') ? '▼' : '▶'}
+          </span>
         </div>
+
+        {/* Expandable table container */}
+        {expandedColors.has('all') && (
+          <div className="color-table-container">
+            <table className="color-table">
+              <thead>
+                <tr>
+                  <th>Color</th>
+                  <th>Element</th>
+                  <th>Property</th>
+                  <th>Desktop %</th>
+                  <th>Mobile %</th>
+                  <th>Sample Text</th>
+                </tr>
+              </thead>
+              <tbody>
+                {colorsWithPixelData.map((colorData, index) => {
+                  return (
+                    <tr key={index} className="color-table-row">
+                      <td>
+                        <div className="color-table-preview">
+                          <div 
+                            className="color-table-swatch" 
+                            style={{ backgroundColor: colorData.color }}
+                            title={colorData.color}
+                          ></div>
+                          <span className="color-table-hex">{colorData.color}</span>
+                        </div>
+                      </td>
+                      <td>{colorData.element}</td>
+                      <td>{colorData.property}</td>
+                      <td className="pixel-percentage">
+                        {colorData.desktopPercentage}%
+                      </td>
+                      <td className="pixel-percentage">
+                        {colorData.mobilePercentage}%
+                      </td>
+                      <td className="sample-text">{colorData.sampleText}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -943,6 +922,45 @@ const FontList = ({ fonts }) => {
     <div className="font-list">
       <div className="font-summary">
         <h4>Detected Fonts ({unique.length})</h4>
+        
+        {/* Font Names Display - Integrated into the summary section */}
+        {processed && processed.length > 0 && (
+          <div className="font-names-container">
+            {processed.map((font, index) => {
+              const loadingState = fontLoadingStates[font.family] || 'idle';
+              const isLoaded = loadedFonts.has(font.family);
+              
+              return (
+                <div key={index} className="font-name-item">
+                  <h5 className="font-name-title">{font.family}</h5>
+                  <div className="font-name-badges">
+                    {font.isWebFont && <span className="web-font-badge">🌐 Web Font</span>}
+                    {(() => {
+                      const parsedFont = parseFontName(font.family);
+                      if (parsedFont.isParsed) {
+                        return (
+                          <span className={`parsing-confidence-badge confidence-${parsedFont.confidence}`}>
+                            {parsedFont.confidence === 'high' ? '✓ Exact Match' :
+                             parsedFont.confidence === 'medium' ? '🔍 Similar Font' :
+                             '⚠ Low Confidence'}
+                          </span>
+                        );
+                      }
+                      return null;
+                    })()}
+                    {font.isWebFont && (
+                      <span className={`font-loading-badge font-loading-${loadingState}`}>
+                        {loadingState === 'loading' ? '⏳ Loading...' :
+                         loadingState === 'loaded' ? '✓ Loaded' :
+                         loadingState === 'error' ? '✗ Failed' : '⏳ Pending'}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
       
       {processed && processed.length > 0 && (
@@ -953,30 +971,9 @@ const FontList = ({ fonts }) => {
             
             return (
               <div key={index} className="font-family-detail">
-                {/* Line 1: Font name with badges */}
-                <div className="font-name-line">
+                {/* Font name reference (smaller, since it's now in the summary) */}
+                <div className="font-name-reference">
                   <span className="font-name">{font.family}</span>
-                  {font.isWebFont && <span className="web-font-badge">🌐 Web Font</span>}
-                  {(() => {
-                    const parsedFont = parseFontName(font.family);
-                    if (parsedFont.isParsed) {
-                      return (
-                        <span className={`parsing-confidence-badge confidence-${parsedFont.confidence}`}>
-                          {parsedFont.confidence === 'high' ? '✓ Exact Match' :
-                           parsedFont.confidence === 'medium' ? '🔍 Similar Font' :
-                           '⚠ Low Confidence'}
-                        </span>
-                      );
-                    }
-                    return null;
-                  })()}
-                  {font.isWebFont && (
-                    <span className={`font-loading-badge font-loading-${loadingState}`}>
-                      {loadingState === 'loading' ? '⏳ Loading...' :
-                       loadingState === 'loaded' ? '✓ Loaded' :
-                       loadingState === 'error' ? '✗ Failed' : '⏳ Pending'}
-                    </span>
-                  )}
                 </div>
                 
                 {/* Line 2: Usage context */}

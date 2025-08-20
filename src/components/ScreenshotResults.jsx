@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import DesignAnalysisPanel from './DesignAnalysisPanel';
 
 // Thumbnail component that shows only the viewport part
-const Thumbnail = ({ screenshot, method, width, height, onClick }) => {
+const Thumbnail = ({ screenshot, method, width, height, onClick, className }) => {
   const [thumbnailSrc, setThumbnailSrc] = React.useState(null);
 
   const createThumbnail = (imageData) => {
@@ -73,7 +73,7 @@ const Thumbnail = ({ screenshot, method, width, height, onClick }) => {
     <img 
       src={thumbnailSrc} 
       alt={`Thumbnail using ${method}`}
-      className="screenshot-thumbnail"
+      className={`screenshot-thumbnail ${className || ''}`}
       title="Click to view full page"
       onClick={onClick}
       style={{ cursor: 'pointer' }}
@@ -151,6 +151,7 @@ const ScreenshotResults = ({ results }) => {
             width={result.screenshots.desktop.width}
             height={result.screenshots.desktop.height}
             onClick={() => openModal(result.screenshots.desktop, 'Desktop')}
+            className="desktop"
           />
           <div className="thumbnail-hint">Click thumbnail to view full screenshot</div>
           <a
@@ -172,6 +173,7 @@ const ScreenshotResults = ({ results }) => {
               width={availableMobileDevices[selectedMobileDevice].width}
               height={availableMobileDevices[selectedMobileDevice].height}
               onClick={() => openModal(availableMobileDevices[selectedMobileDevice], availableMobileDevices[selectedMobileDevice].device)}
+              className="mobile"
             />
             <div className="thumbnail-hint">Click thumbnail to view full screenshot</div>
             <a
