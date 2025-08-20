@@ -818,13 +818,100 @@ app.post('/api/screenshot', async (req, res) => {
       }
     }
     
-    // Complete design analysis before sending response
+    // Add pixel analysis for desktop screenshot FIRST (before design analysis)
+    let desktopPixelAnalysis = null;
+    if (captureColors) {
+      try {
+        console.log(`🔍 Analyzing desktop screenshot pixels...`);
+        console.log(`🔍 Screenshot type:`, typeof desktopScreenshot);
+        console.log(`🔍 Screenshot length:`, desktopScreenshot?.length || 'undefined');
+        console.log(`🔍 Page object available:`, !!page);
+        
+        desktopPixelAnalysis = await analyzeScreenshotPixels(page, desktopScreenshot);
+        console.log(`✅ Desktop pixel analysis completed:`, {
+          totalPixels: desktopPixelAnalysis?.totalPixels || 0,
+          colorCount: desktopPixelAnalysis?.colors?.length || 0
+        });
+      } catch (err) {
+        console.error('❌ Desktop pixel analysis failed:', err);
+        console.error('❌ Error details:', err.message);
+        console.error('❌ Error stack:', err.stack);
+      }
+    } else {
+      console.log(`⚠️  Pixel analysis skipped - captureColors is ${captureColors}`);
+    }
+
+    // Add pixel analysis for mobile screenshots
+    const mobilePixelAnalysis = [];
+    if (captureColors && mobileScreenshots.length > 0) {
+      for (let i = 0; i < mobileScreenshots.length; i++) {
+        try {
+          console.log(`🔍 Analyzing mobile screenshot pixels for device ${i + 1}...`);
+          // Reset to desktop viewport first
+          await page.setViewport({ width, height });
+          await page.emulate({
+            userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            viewport: { width, height, deviceScaleFactor: 1, isMobile: false, hasTouch: false }
+          });
+          
+          // Emulate the mobile device again
+          const deviceKey = mobileDevices[i];
+          const DEVICE_PRESETS = {
+            'iPhone 12': {
+              name: 'iPhone 12',
+              userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.3 Mobile/15E148 Safari/604.1',
+              viewport: { width: 390, height: 844, deviceScaleFactor: 3, isMobile: true, hasTouch: true }
+            },
+            'Samsung Galaxy S21': {
+              name: 'Samsung Galaxy S21',
+              userAgent: 'Mozilla/5.0 (Linux; Android 11; SM-G991B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36',
+              viewport: { width: 360, height: 800, deviceScaleFactor: 3, isMobile: true, hasTouch: true }
+            }
+          };
+          
+          const device = DEVICE_PRESETS[deviceKey];
+          if (device) {
+            await page.emulate(device);
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            const mobileScreenshot = await page.screenshot({
+              type: 'png',
+              fullPage: fullPage
+            });
+            
+            const pixelAnalysis = await analyzeScreenshotPixels(page, mobileScreenshot);
+            mobilePixelAnalysis.push(pixelAnalysis);
+            console.log(`✅ Mobile pixel analysis completed for device ${i + 1}:`, {
+              totalPixels: pixelAnalysis?.totalPixels || 0,
+              colorCount: pixelAnalysis?.colors?.length || 0
+            });
+          }
+        } catch (err) {
+          console.error(`❌ Mobile pixel analysis failed for device ${i + 1}:`, err);
+          mobilePixelAnalysis.push(null);
+        }
+      }
+    }
+
+    // Complete design analysis AFTER pixel analysis
     console.log(`🎨 Starting design analysis for: ${url}`);
     let designAnalysis = null;
     try {
       const result = await analyzeSiteDesign(url, page); // Pass page
       if (result.success) {
         designAnalysis = result.analysis; // This is correct - result.analysis contains {colors, fonts, timestamp}
+        
+        // Add pixel analysis to the design analysis
+        if (designAnalysis && designAnalysis.colors) {
+          designAnalysis.colors.pixelAnalysis = desktopPixelAnalysis;
+          designAnalysis.colors.mobilePixelAnalysis = mobilePixelAnalysis;
+          console.log(`✅ Pixel analysis added to design analysis:`, {
+            desktop: !!desktopPixelAnalysis,
+            mobile: mobilePixelAnalysis.length,
+            totalMobileColors: mobilePixelAnalysis.reduce((sum, analysis) => sum + (analysis?.colors?.length || 0), 0)
+          });
+        }
+        
         analysisResults.set(url, result);
         console.log(`✅ Design analysis completed for: ${url}`);
       }
@@ -838,7 +925,16 @@ app.post('/api/screenshot', async (req, res) => {
     res.json({
       success: true,
       screenshots: {
-        desktop: base64DesktopScreenshot,
+        desktop: {
+          base64: base64DesktopScreenshot,
+          format: 'png',
+          size: {
+            width: width,
+            height: fullPage ? 'auto' : height
+          },
+          viewport: { width, height, deviceScaleFactor: 1, isMobile: false, hasTouch: false },
+          userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        },
         mobile: mobileScreenshots
       },
       url: url,
@@ -895,6 +991,138 @@ app.get('*', (req, res) => {
   }
   res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
+
+/**
+ * Analyze screenshot pixels to extract color distribution
+ */
+const analyzeScreenshotPixels = async (page, screenshotBuffer) => {
+  try {
+    console.log('🔍 Starting pixel analysis...');
+    console.log('🔍 Screenshot buffer type:', typeof screenshotBuffer);
+    console.log('🔍 Screenshot buffer length:', screenshotBuffer?.length || 'undefined');
+    
+    // Convert screenshot buffer to base64 first
+    const screenshotBase64 = screenshotBuffer.toString('base64');
+    console.log('🔍 Screenshot converted to base64, length:', screenshotBase64.length);
+    
+    // Use Canvas API to analyze pixels
+    const pixelData = await page.evaluate((base64String) => {
+      console.log('🔍 Inside page.evaluate, starting pixel analysis...');
+      console.log('🔍 Base64 string length:', base64String.length);
+      
+      return new Promise((resolve, reject) => {
+        try {
+          const img = new Image();
+          
+          img.onload = () => {
+            try {
+              console.log('🔍 Image loaded, dimensions:', img.width, 'x', img.height);
+              
+              const canvas = document.createElement('canvas');
+              const ctx = canvas.getContext('2d');
+              
+              if (!ctx) {
+                console.error('❌ Could not get canvas context');
+                reject(new Error('Canvas context not available'));
+                return;
+              }
+              
+              canvas.width = img.width;
+              canvas.height = img.height;
+              
+              console.log('🔍 Canvas created, drawing image...');
+              ctx.drawImage(img, 0, 0);
+              
+              console.log('🔍 Getting image data...');
+              const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+              const pixels = imageData.data;
+              
+              console.log('🔍 Image data obtained, pixels length:', pixels.length);
+              
+              // Sample pixels (every 3rd pixel for performance)
+              const sampleRate = 3;
+              const colorCounts = {};
+              const totalPixels = Math.floor(pixels.length / 4 / sampleRate);
+              
+              console.log('🔍 Starting pixel sampling, total pixels to sample:', totalPixels);
+              
+              for (let i = 0; i < pixels.length; i += 4 * sampleRate) {
+                const r = pixels[i];
+                const g = pixels[i + 1];
+                const b = pixels[i + 2];
+                const a = pixels[i + 3];
+                
+                // Skip transparent pixels
+                if (a < 128) continue;
+                
+                // Group similar colors (within ±5 RGB units for more precise grouping)
+                const colorKey = `${Math.floor(r/5)*5},${Math.floor(g/5)*5},${Math.floor(b/5)*5}`;
+                
+                if (!colorCounts[colorKey]) {
+                  colorCounts[colorKey] = {
+                    r: Math.floor(r/5)*5,
+                    g: Math.floor(g/5)*5,
+                    b: Math.floor(b/5)*5,
+                    count: 0,
+                    percentage: 0
+                  };
+                }
+                
+                colorCounts[colorKey].count++;
+              }
+              
+              console.log('🔍 Pixel sampling complete, unique colors found:', Object.keys(colorCounts).length);
+              
+              // Calculate percentages and sort by frequency
+              const colorArray = Object.values(colorCounts)
+                .map(color => ({
+                  ...color,
+                  percentage: (color.count / totalPixels) * 100
+                }))
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 20); // Top 20 colors
+              
+              console.log('🔍 Color analysis complete, top colors:', colorArray.slice(0, 3).map(c => `${c.r},${c.g},${c.b} (${c.percentage.toFixed(1)}%)`));
+              
+              resolve({
+                totalPixels,
+                colors: colorArray
+              });
+            } catch (canvasError) {
+              console.error('❌ Canvas processing error:', canvasError);
+              reject(canvasError);
+            }
+          };
+          
+          img.onerror = (error) => {
+            console.error('❌ Image loading error:', error);
+            console.error('❌ Image error details:', error);
+            reject(new Error('Failed to load image'));
+          };
+          
+          console.log('🔍 Setting image source...');
+          img.src = 'data:image/png;base64,' + base64String;
+          
+        } catch (setupError) {
+          console.error('❌ Setup error:', setupError);
+          reject(setupError);
+        }
+      });
+    }, screenshotBase64);
+    
+    console.log('✅ Pixel analysis complete:', {
+      totalPixels: pixelData?.totalPixels || 0,
+      colorCount: pixelData?.colors?.length || 0
+    });
+    
+    return pixelData;
+    
+  } catch (error) {
+    console.error('❌ Pixel analysis failed:', error);
+    console.error('❌ Error stack:', error.stack);
+    return null;
+  }
+};
 
 
 

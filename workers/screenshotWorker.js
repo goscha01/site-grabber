@@ -339,6 +339,13 @@ const captureAndAnalyze = async (job) => {
             };
           });
         }
+
+        // Analyze mobile screenshot pixels for color distribution
+        let devicePixelAnalysis = null;
+        if (options.captureColors) {
+          console.log(`🔍 Analyzing mobile screenshot pixels for ${device.name}...`);
+          devicePixelAnalysis = await analyzeScreenshotPixels(page, mobileScreenshot);
+        }
         
         mobileScreenshots.push({
           device: device.name,
@@ -347,7 +354,8 @@ const captureAndAnalyze = async (job) => {
           userAgent: device.userAgent,
           devicePixelRatio: device.devicePixelRatio,
           fonts: deviceFonts,
-          colors: deviceColors
+          colors: deviceColors,
+          pixelAnalysis: devicePixelAnalysis
         });
         
         mobileFonts.push(deviceFonts);
@@ -391,6 +399,13 @@ const captureAndAnalyze = async (job) => {
         };
       });
     }
+
+    // Analyze desktop screenshot pixels for color distribution
+    let desktopPixelAnalysis = null;
+    if (options.captureColors) {
+      console.log(`🔍 Analyzing desktop screenshot pixels...`);
+      desktopPixelAnalysis = await analyzeScreenshotPixels(page, desktopScreenshot);
+    }
     
     job.progress(95);
     
@@ -426,12 +441,14 @@ const captureAndAnalyze = async (job) => {
       analysis: {
         desktop: {
           colors: desktopColors,
-          fonts: desktopFonts
+          fonts: desktopFonts,
+          pixelAnalysis: desktopPixelAnalysis
         },
         mobile: mobileScreenshots.map((device, index) => ({
           device: device.device,
           colors: device.colors,
-          fonts: device.fonts
+          fonts: device.fonts,
+          pixelAnalysis: device.pixelAnalysis
         })),
         metadata: metadata,
         timestamp: new Date().toISOString(),
@@ -452,6 +469,91 @@ const captureAndAnalyze = async (job) => {
     if (browser) {
       await browser.close();
     }
+  }
+};
+
+/**
+ * Analyze screenshot pixels to extract color distribution
+ */
+const analyzeScreenshotPixels = async (page, screenshotBuffer) => {
+  try {
+    console.log('🔍 Starting pixel analysis...');
+    
+    // Use Canvas API to analyze pixels
+    const pixelData = await page.evaluate((screenshotBase64) => {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          canvas.width = img.width;
+          canvas.height = img.height;
+          
+          ctx.drawImage(img, 0, 0);
+          
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const pixels = imageData.data;
+          
+          // Sample pixels (every 3rd pixel for performance)
+          const sampleRate = 3;
+          const colorCounts = {};
+          const totalPixels = Math.floor(pixels.length / 4 / sampleRate);
+          
+          for (let i = 0; i < pixels.length; i += 4 * sampleRate) {
+            const r = pixels[i];
+            const g = pixels[i + 1];
+            const b = pixels[i + 2];
+            const a = pixels[i + 3];
+            
+            // Skip transparent pixels
+            if (a < 128) continue;
+            
+            // Group similar colors (within ±5 RGB units for more precise grouping)
+            const colorKey = `${Math.floor(r/5)*5},${Math.floor(g/5)*5},${Math.floor(b/5)*5}`;
+            
+            if (!colorCounts[colorKey]) {
+              colorCounts[colorKey] = {
+                r: Math.floor(r/5)*5,
+                g: Math.floor(g/5)*5,
+                b: Math.floor(b/5)*5,
+                count: 0,
+                percentage: 0
+              };
+            }
+            
+            colorCounts[colorKey].count++;
+          }
+          
+          // Calculate percentages and sort by frequency
+          const colorArray = Object.values(colorCounts)
+            .map(color => ({
+              ...color,
+              percentage: (color.count / totalPixels) * 100
+            }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 20); // Top 20 colors
+          
+          resolve({
+            totalPixels,
+            colors: colorArray
+          });
+        };
+        
+        img.src = 'data:image/png;base64,' + btoa(String.fromCharCode(...new Uint8Array(screenshotBase64)));
+      });
+    }, Buffer.from(screenshotBuffer));
+    
+    console.log('✅ Pixel analysis complete:', {
+      totalPixels: pixelData?.totalPixels || 0,
+      colorCount: pixelData?.colors?.length || 0
+    });
+    
+    return pixelData;
+    
+  } catch (error) {
+    console.error('❌ Pixel analysis failed:', error);
+    return null;
   }
 };
 

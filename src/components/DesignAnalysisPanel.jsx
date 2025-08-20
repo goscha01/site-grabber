@@ -315,191 +315,217 @@ const ColorPalette = ({ colors }) => {
     return <div className="error">Failed to extract colors</div>;
   }
 
-  // Separate colors into dominant and accent based on element types and usage
-  const dominantColors = colors.dominantColors || [];
-  const accentColors = colors.accentColors || [];
-  
-  // If no accent colors defined, create them from detailed colors
+  // Debug logging for pixel analysis data
+  console.log('🎨 ColorPalette - colors data:', {
+    dominantColors: colors.dominantColors?.length || 0,
+    detailed: colors.detailed?.length || 0,
+    pixelAnalysis: colors.pixelAnalysis ? {
+      totalPixels: colors.pixelAnalysis.totalPixels,
+      colorCount: colors.pixelAnalysis.colors?.length || 0,
+      topColors: colors.pixelAnalysis.colors?.slice(0, 3).map(c => `${c.r},${c.g},${c.b} (${c.percentage.toFixed(1)}%)`) || []
+    } : null,
+    mobilePixelAnalysis: colors.mobilePixelAnalysis ? {
+      count: colors.mobilePixelAnalysis.length,
+      devices: colors.mobilePixelAnalysis.map((device, i) => ({
+        device: i,
+        totalPixels: device?.totalPixels || 0,
+        colorCount: device?.colors?.length || 0
+      }))
+    } : null
+  });
+
+  // Summary of pixel analysis data
+  if (colors.pixelAnalysis) {
+    console.log('🔍 Desktop Pixel Analysis Summary:', {
+      totalPixels: colors.pixelAnalysis.totalPixels,
+      uniqueColors: colors.pixelAnalysis.colors?.length || 0,
+      topColors: colors.pixelAnalysis.colors?.slice(0, 5).map(c => ({
+        rgb: `${c.r},${c.g},${c.b}`,
+        percentage: c.percentage.toFixed(1) + '%'
+      }))
+    });
+  }
+
+  if (colors.mobilePixelAnalysis && colors.mobilePixelAnalysis.length > 0) {
+    console.log('📱 Mobile Pixel Analysis Summary:', {
+      devices: colors.mobilePixelAnalysis.length,
+      deviceData: colors.mobilePixelAnalysis.map((device, i) => ({
+        device: i,
+        totalPixels: device?.totalPixels || 0,
+        uniqueColors: device?.colors?.length || 0,
+        topColors: device?.colors?.slice(0, 3).map(c => ({
+          rgb: `${c.r},${c.g},${c.b}`,
+          percentage: c.percentage.toFixed(1) + '%'
+        })) || []
+      }))
+    });
+  }
+
+  // SIMPLE APPROACH: Just filter out pure black and white, keep everything else
   const allDetailedColors = colors.detailed || [];
-  const colorFrequency = {};
+  const colorsWithPixelData = [];
+  const blackAndWhiteColorsFiltered = [];
   
-  // Enhanced element categorization
-  const dominantElements = [
-    'body', 'main', 'section', 'div', 'p', 'span', 'background',
-    'article', 'aside', 'header', 'footer', 'nav', 'container',
-    'wrapper', 'content', 'hero', 'banner', 'card', 'panel'
-  ];
+  console.log('🔍 SIMPLE FILTERING: Removing only pure black and white...');
   
-  const accentElements = [
-    'a', 'button', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 
-    'input', 'select', 'textarea', 'label', 'form',
-    'cta', 'call-to-action', 'primary', 'secondary', 'action',
-    'link', 'navigation', 'menu', 'dropdown', 'toggle'
-  ];
-  
-  // Browser default colors to filter out
-  const browserDefaults = [
-    '#0000FF', '#800080', '#008000', '#FF0000', '#000080',
-    '#800000', '#FF00FF', '#00FFFF', '#FFFF00', '#808080',
-    '#C0C0C0', '#FFFFFF', '#000000'
-  ];
-  
-  // Helper function to convert RGB to hex for deduplication
-  const normalizeColor = (color) => {
-    if (!color) return null;
-    
-    // Handle RGB/RGBA colors
-    if (color.startsWith('rgb')) {
-      const match = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\)/);
+  // Helper function to convert CSS color to RGB for comparison
+  const cssColorToRGB = (cssColor) => {
+    if (cssColor.startsWith('rgb')) {
+      const match = cssColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
       if (match) {
-        const r = parseInt(match[1]);
-        const g = parseInt(match[2]);
-        const b = parseInt(match[3]);
-        return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`.toUpperCase();
+        return {
+          r: parseInt(match[1]),
+          g: parseInt(match[2]),
+          b: parseInt(match[3])
+        };
       }
-    }
-    
-    // Handle hex colors
-    if (color.startsWith('#')) {
-      return color.toUpperCase();
-    }
-    
-    return color;
-  };
-  
-  // Helper function to check if color is too close to black/white
-  const isTooCloseToExtreme = (color) => {
-    if (!color || !color.startsWith('#')) return false;
-    
-    const hex = color.replace('#', '');
-    const r = parseInt(hex.substr(0, 2), 16);
-    const g = parseInt(hex.substr(2, 2), 16);
-    const b = parseInt(hex.substr(4, 2), 16);
-    
-    // Check if too close to pure black (within 15 units)
-    if (r <= 15 && g <= 15 && b <= 15) return true;
-    
-    // Check if too close to pure white (within 15 units)
-    if (r >= 240 && g >= 240 && b >= 240) return true;
-    
-    return false;
-  };
-  
-  // Helper function to calculate color saturation (rough approximation)
-  const getColorSaturation = (color) => {
-    if (!color || !color.startsWith('#')) return 0;
-    
-    const hex = color.replace('#', '');
-    const r = parseInt(hex.substr(0, 2), 16);
-    const g = parseInt(hex.substr(2, 2), 16);
-    const b = parseInt(hex.substr(4, 2), 16);
-    
-    const max = Math.max(r, g, b);
-    const min = Math.min(r, g, b);
-    const delta = max - min;
-    
-    return delta / 255; // Returns 0-1, where 0 is grayscale
-  };
-  
-  // Process and categorize colors with enhanced filtering
-  allDetailedColors.forEach(colorData => {
-    const originalColor = colorData.color;
-    const normalizedColor = normalizeColor(originalColor);
-    
-    if (!normalizedColor) return;
-    
-    // Skip browser default colors
-    if (browserDefaults.includes(normalizedColor)) return;
-    
-    // Skip colors too close to pure black/white
-    if (isTooCloseToExtreme(normalizedColor)) return;
-    
-    // Skip very low saturation colors (grays) unless they appear frequently
-    const saturation = getColorSaturation(normalizedColor);
-    if (saturation < 0.1) {
-      // Only include low saturation colors if they appear multiple times
-      if (colorFrequency[normalizedColor] && colorFrequency[normalizedColor].count > 2) {
-        // Allow it to continue processing
-      } else {
-        return; // Skip this color
-      }
-    }
-    
-    const element = colorData.element?.toLowerCase() || '';
-    const property = colorData.property?.toLowerCase() || '';
-    
-    // Count frequency and track elements
-    if (!colorFrequency[normalizedColor]) {
-      colorFrequency[normalizedColor] = { 
-        count: 0, 
-        elements: new Set(), 
-        originalColors: new Set(),
-        isAccent: false,
-        accentScore: 0
+    } else if (cssColor.startsWith('#')) {
+      const hex = cssColor.replace('#', '');
+      return {
+        r: parseInt(hex.substr(0, 2), 16),
+        g: parseInt(hex.substr(2, 2), 16),
+        b: parseInt(hex.substr(4, 2), 16)
       };
     }
+    return null;
+  };
+
+  // Simple check: is it pure black or pure white?
+  const isPureBlackOrWhite = (color) => {
+    // Handle common black and white color names
+    const blackWhiteColors = [
+      'white', '#ffffff', '#fff', 'rgb(255, 255, 255)', 'rgba(255, 255, 255, 1)',
+      'black', '#000000', '#000', 'rgb(0, 0, 0)', 'rgba(0, 0, 0, 1)'
+    ];
     
-    colorFrequency[normalizedColor].count += 1;
-    colorFrequency[normalizedColor].elements.add(element);
-    colorFrequency[normalizedColor].originalColors.add(originalColor);
-    
-    // Enhanced accent color detection with scoring
-    let accentScore = 0;
-    
-    // Check if it's an accent color based on element type
-    if (accentElements.some(accEl => element.includes(accEl))) {
-      accentScore += 2; // Strong accent indicator
+    // Check exact matches first
+    if (blackWhiteColors.includes(color.toLowerCase())) {
+      return true;
     }
     
-    // Check property-based accent indicators
-    if (property.includes('color') || property.includes('background')) {
-      // Check if this color is used in interactive contexts
-      if (element.includes('a') || element.includes('button') || element.includes('input')) {
-        accentScore += 1;
-      }
+    // Check RGB values - only pure black (0,0,0) and pure white (255,255,255)
+    const rgb = cssColorToRGB(color);
+    if (!rgb) return false;
+    
+    const isPureWhite = rgb.r === 255 && rgb.g === 255 && rgb.b === 255;
+    const isPureBlack = rgb.r === 0 && rgb.g === 0 && rgb.b === 0;
+    
+    return isPureWhite || isPureBlack;
+  };
+
+  // Process each color - filter out pure black/white AND calculate pixel percentages
+  allDetailedColors.forEach(colorData => {
+    // First check: is it pure black or white?
+    if (isPureBlackOrWhite(colorData.color)) {
+      blackAndWhiteColorsFiltered.push(colorData.color);
+      console.log(`❌ Color ${colorData.color} is pure black/white - filtering out`);
+      return;
     }
     
-    // Check if color appears in multiple accent contexts
-    if (colorFrequency[normalizedColor].elements.size > 1) {
-      const accentElementCount = Array.from(colorFrequency[normalizedColor].elements)
-        .filter(el => accentElements.some(accEl => el.includes(accEl))).length;
-      accentScore += accentElementCount * 0.5;
+    // Calculate pixel percentages for colors that pass the black/white filter
+    let desktopPercentage = 0;
+    let mobilePercentage = 0;
+    
+    // Helper function to find matching color in pixel analysis
+    const findPixelPercentage = (pixelAnalysis, cssColor) => {
+      if (!pixelAnalysis || !pixelAnalysis.colors) return 0;
+      
+      const rgb = cssColorToRGB(cssColor);
+      if (!rgb) return 0;
+      
+      const pixelData = pixelAnalysis.colors.find(p => {
+        // Check if pixel color is within ±5 RGB units for more lenient matching
+        // This helps catch colors that might have slight variations
+        return Math.abs(rgb.r - p.r) <= 5 && 
+               Math.abs(rgb.g - p.g) <= 5 && 
+               Math.abs(rgb.b - p.b) <= 5;
+      });
+      
+      return pixelData ? parseFloat(pixelData.percentage.toFixed(1)) : 0;
+    };
+
+    // Get desktop pixel percentage
+    if (colors && colors.pixelAnalysis) {
+      desktopPercentage = findPixelPercentage(colors.pixelAnalysis, colorData.color);
     }
-    
-    // Update accent score
-    colorFrequency[normalizedColor].accentScore = Math.max(
-      colorFrequency[normalizedColor].accentScore, 
-      accentScore
-    );
-    
-    // Mark as accent if score is high enough
-    if (accentScore >= 1) {
-      colorFrequency[normalizedColor].isAccent = true;
+
+    // Get mobile pixel percentage (use first mobile device)
+    if (colors && colors.mobilePixelAnalysis && colors.mobilePixelAnalysis.length > 0) {
+      mobilePercentage = findPixelPercentage(colors.mobilePixelAnalysis[0], colorData.color);
+    }
+
+    // Only keep colors that have some pixel data (not 0% on both desktop and mobile)
+    if (desktopPercentage > 0 || mobilePercentage > 0) {
+      colorsWithPixelData.push({
+        ...colorData,
+        desktopPercentage,
+        mobilePercentage,
+        totalPercentage: Math.max(desktopPercentage, mobilePercentage)
+      });
+      console.log(`✅ Color ${colorData.color} kept - Desktop: ${desktopPercentage}%, Mobile: ${mobilePercentage}%`);
+    } else {
+      console.log(`❌ Color ${colorData.color} has no pixel data - filtering out`);
     }
   });
-  
-  // Filter colors by minimum usage threshold (only include colors used more than once)
-  const filteredColors = Object.entries(colorFrequency)
-    .filter(([, data]) => data.count > 1)
-    .sort(([,a], [,b]) => b.count - a.count);
-  
-  // Get dominant colors (exclude accent colors)
-  const dominantFromDetailed = filteredColors
-    .filter(([, data]) => !data.isAccent)
+
+  console.log(`🔍 Colors kept: ${colorsWithPixelData.length}/${allDetailedColors.length}`);
+  console.log(`🔍 Pure black/white colors filtered out: ${blackAndWhiteColorsFiltered.length}`, blackAndWhiteColorsFiltered);
+
+  // Step 3: Determine dominant colors based on pixel usage
+  const dominantColorsByUsage = colorsWithPixelData
+    .sort((a, b) => b.totalPercentage - a.totalPercentage)
     .slice(0, 5)
-    .map(([color]) => color);
+    .map(color => color.color);
+
+  console.log('🔍 Dominant colors by pixel usage:', dominantColorsByUsage);
   
-  // Merge with existing dominant colors
-  const finalDominant = [...new Set([...dominantColors, ...dominantFromDetailed])].slice(0, 5);
+  // Add a summary section
+  const summaryInfo = {
+    totalColors: allDetailedColors.length,
+    colorsKept: colorsWithPixelData.length,
+    colorsFilteredOut: allDetailedColors.length - colorsWithPixelData.length,
+    pureBlackAndWhiteFiltered: blackAndWhiteColorsFiltered.length,
+    noPixelDataFiltered: allDetailedColors.length - colorsWithPixelData.length - blackAndWhiteColorsFiltered.length,
+    dominantColors: dominantColorsByUsage.length
+  };
+  
+  console.log('🔍 Summary:', summaryInfo);
   
   return (
     <div className="color-palette">
+      {/* Summary Section */}
+      <div className="color-section summary-section">
+        <h4>📊 Color Analysis Summary</h4>
+        <div className="summary-grid">
+          <div className="summary-item">
+            <span className="summary-label">Total CSS Colors Found:</span>
+            <span className="summary-value">{summaryInfo.totalColors}</span>
+          </div>
+          <div className="summary-item">
+            <span className="summary-label">Colors Kept:</span>
+            <span className="summary-value">{summaryInfo.colorsKept}</span>
+          </div>
+          <div className="summary-item">
+            <span className="summary-label">Pure Black/White Filtered:</span>
+            <span className="summary-value">{summaryInfo.pureBlackAndWhiteFiltered}</span>
+          </div>
+          <div className="summary-item">
+            <span className="summary-label">No Pixel Data Filtered:</span>
+            <span className="summary-value">{summaryInfo.noPixelDataFiltered}</span>
+          </div>
+          <div className="summary-item">
+            <span className="summary-label">Dominant Colors:</span>
+            <span className="summary-value">{summaryInfo.dominantColors}</span>
+          </div>
+        </div>
+      </div>
+      
       {/* Dominant Colors Section */}
       <div className="color-section dominant-section">
-        <h4>🎯 Dominant Colors ({finalDominant.length})</h4>
-        <p className="section-description">Main content colors used for backgrounds, text, and primary content areas</p>
+        <h4>🎯 Dominant Colors ({dominantColorsByUsage.length})</h4>
+        <p className="section-description">Top colors by actual pixel usage on the page (filtered from pixel analysis)</p>
         <div className="color-grid">
-          {finalDominant.map((color, index) => (
+          {dominantColorsByUsage.map((color, index) => (
             <div key={index} className="color-swatch dominant-swatch">
               <div 
                 className="color-circle"
@@ -521,7 +547,14 @@ const ColorPalette = ({ colors }) => {
       {/* Color Usage Details */}
       <div className="color-details">
         <h4>📊 Color Usage Details</h4>
-        <p className="section-description">Detailed breakdown of how colors are used throughout the website</p>
+        <p className="section-description">Only colors with actual pixel data (no 0% values) - excluding pure black/white</p>
+        
+        {/* Debug logging for details table */}
+        {console.log('🔍 Details table - colorsWithPixelData:', {
+          count: colorsWithPixelData.length,
+          colors: colorsWithPixelData.map(c => c.color)
+        })}
+        
         <div className="color-table-container">
           <table className="color-table">
             <thead>
@@ -529,27 +562,37 @@ const ColorPalette = ({ colors }) => {
                 <th>Color</th>
                 <th>Element</th>
                 <th>Property</th>
+                <th>Desktop %</th>
+                <th>Mobile %</th>
                 <th>Sample Text</th>
               </tr>
             </thead>
             <tbody>
-              {allDetailedColors.map((colorData, index) => (
-                <tr key={index} className="color-table-row">
-                  <td>
-                    <div className="color-table-preview">
-                      <div 
-                        className="color-table-swatch" 
-                        style={{ backgroundColor: colorData.color }}
-                        title={colorData.color}
-                      ></div>
-                      <span className="color-table-hex">{colorData.color}</span>
-                    </div>
-                  </td>
-                  <td>{colorData.element}</td>
-                  <td>{colorData.property}</td>
-                  <td className="sample-text">{colorData.sampleText}</td>
-                </tr>
-              ))}
+              {colorsWithPixelData.map((colorData, index) => {
+                return (
+                  <tr key={index} className="color-table-row">
+                    <td>
+                      <div className="color-table-preview">
+                        <div 
+                          className="color-table-swatch" 
+                          style={{ backgroundColor: colorData.color }}
+                          title={colorData.color}
+                        ></div>
+                        <span className="color-table-hex">{colorData.color}</span>
+                      </div>
+                    </td>
+                    <td>{colorData.element}</td>
+                    <td>{colorData.property}</td>
+                    <td className="pixel-percentage">
+                      {colorData.desktopPercentage}%
+                    </td>
+                    <td className="pixel-percentage">
+                      {colorData.mobilePercentage}%
+                    </td>
+                    <td className="sample-text">{colorData.sampleText}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

@@ -81,11 +81,26 @@ function App() {
       
       const responseData = await response.json();
       
+      // Debug logging to see the actual response structure
+      console.log('🔍 Backend response structure:', {
+        success: responseData.success,
+        hasScreenshots: !!responseData.screenshots,
+        screenshotsKeys: responseData.screenshots ? Object.keys(responseData.screenshots) : [],
+        hasAnalysis: !!responseData.analysis,
+        analysisKeys: responseData.analysis ? Object.keys(responseData.analysis) : []
+      });
+      
       if (!responseData.success) {
         throw new Error(responseData.error || 'Screenshot capture failed');
       }
       
-      const desktopDataUrl = `data:image/png;base64,${responseData.screenshots.desktop}`;
+      // Validate response structure
+      if (!responseData.screenshots || !responseData.screenshots.desktop || !responseData.screenshots.desktop.base64) {
+        console.error('❌ Invalid response structure:', responseData);
+        throw new Error('Backend returned invalid response structure');
+      }
+      
+      const desktopDataUrl = `data:image/png;base64,${responseData.screenshots.desktop.base64}`;
       
       // Handle multiple mobile devices
       const mobileScreenshots = responseData.screenshots.mobile.map(device => ({
